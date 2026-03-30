@@ -267,8 +267,8 @@ export default function CollegeFitEstimator({ studentProfile }) {
 
       {!gradeSignals.hasGrades ? (
         <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Putting in your grade link will make this more accurate. Add your StudentVUE link and
-          import a grade CSV in the Grades tab.
+          Putting in your grade link will make this more accurate. Connect StudentVUE in the
+          Grades tab (or upload CSV as fallback).
         </p>
       ) : null}
 

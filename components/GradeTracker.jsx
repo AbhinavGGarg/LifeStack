@@ -43,6 +43,7 @@ function normalizePortalUrl(input) {
 export default function GradeTracker({ userId }) {
   const coursesStorageKey = `lifestack:${userId}:courses`;
   const portalStorageKey = `lifestack:${userId}:studentvuePortal`;
+  const portalUsernameKey = `lifestack:${userId}:studentvueUsername`;
   const importMetaKey = `lifestack:${userId}:gradeImportMeta`;
 
   const [courses, setCourses] = useState(() => {
@@ -64,8 +65,17 @@ export default function GradeTracker({ userId }) {
 
     return String(localStorage.getItem(portalStorageKey) || "").trim();
   });
+  const [studentVueUsername, setStudentVueUsername] = useState(() => {
+    if (typeof window === "undefined" || !userId) {
+      return "";
+    }
+
+    return String(localStorage.getItem(portalUsernameKey) || "").trim();
+  });
+  const [studentVuePassword, setStudentVuePassword] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const [importError, setImportError] = useState("");
+  const [syncingStudentVue, setSyncingStudentVue] = useState(false);
   const [lastImportedAt, setLastImportedAt] = useState(() => {
     if (typeof window === "undefined" || !userId) {
       return "";
@@ -94,6 +104,14 @@ export default function GradeTracker({ userId }) {
 
     localStorage.setItem(portalStorageKey, studentVuePortal);
   }, [portalStorageKey, studentVuePortal, userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    localStorage.setItem(portalUsernameKey, studentVueUsername);
+  }, [portalUsernameKey, studentVueUsername, userId]);
 
   useEffect(() => {
     if (!userId || !lastImportedAt) {
@@ -234,6 +252,69 @@ export default function GradeTracker({ userId }) {
     }
   }
 
+  async function handleStudentVueSync() {
+    if (!studentVuePortal.trim()) {
+      setImportError("Enter your StudentVUE portal link first.");
+      setImportStatus("");
+      return;
+    }
+
+    if (!studentVueUsername.trim() || !studentVuePassword.trim()) {
+      setImportError("Enter your StudentVUE username and password to sync grades.");
+      setImportStatus("");
+      return;
+    }
+
+    setSyncingStudentVue(true);
+    setImportError("");
+    setImportStatus("Connecting to StudentVUE and syncing grades...");
+
+    try {
+      const response = await fetch("/api/grades/studentvue/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          portalUrl: studentVuePortal,
+          username: studentVueUsername,
+          password: studentVuePassword,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Unable to sync grades right now.");
+      }
+
+      const importedCourses = Array.isArray(payload?.courses) ? payload.courses : [];
+
+      if (importedCourses.length === 0) {
+        setImportError("Connected successfully, but no gradebook courses were returned.");
+        setImportStatus("");
+        return;
+      }
+
+      mergeImportedCourses(importedCourses);
+      setImportStatus(
+        `StudentVUE sync complete: ${importedCourses.length} courses imported${
+          payload?.reportingPeriod ? ` (${payload.reportingPeriod})` : ""
+        }.`
+      );
+      setImportError("");
+    } catch (syncError) {
+      setImportError(
+        syncError.message ||
+          "StudentVUE sync failed. Try opening portal first to verify login details."
+      );
+      setImportStatus("");
+    } finally {
+      setStudentVuePassword("");
+      setSyncingStudentVue(false);
+    }
+  }
+
   function removeCourse(courseId) {
     setCourses((previous) => previous.filter((course) => course.id !== courseId));
   }
@@ -254,16 +335,32 @@ export default function GradeTracker({ userId }) {
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
           <p className="text-xs uppercase tracking-wide text-slate-500">StudentVUE Portal</p>
           <p className="mt-1 text-xs text-slate-600">
-            Save your StudentVUE portal for one-click access. Grade auto-sync is blocked by district login security.
+            Add your portal link + login details to pull current courses into LifeStack.
           </p>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
             <input
               type="url"
               value={studentVuePortal}
               onChange={(event) => setStudentVuePortal(event.target.value)}
               placeholder="studentvue.yourschool.org (or full https:// link)"
-              className="min-w-[220px] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none sm:col-span-2"
             />
+            <input
+              type="text"
+              value={studentVueUsername}
+              onChange={(event) => setStudentVueUsername(event.target.value)}
+              placeholder="StudentVUE username"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
+            />
+            <input
+              type="password"
+              value={studentVuePassword}
+              onChange={(event) => setStudentVuePassword(event.target.value)}
+              placeholder="StudentVUE password"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
+            />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={handleOpenPortal}
@@ -271,9 +368,17 @@ export default function GradeTracker({ userId }) {
             >
               Save + Open Portal
             </button>
+            <button
+              type="button"
+              onClick={handleStudentVueSync}
+              disabled={syncingStudentVue}
+              className="rounded-xl bg-sky-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {syncingStudentVue ? "Syncing..." : "Sync Grades"}
+            </button>
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            Tip: after logging in, export your grades CSV and upload it below to sync course data.
+            Your password is used only for this sync request and is not saved in LifeStack.
           </p>
         </div>
 
