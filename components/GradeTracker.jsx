@@ -268,6 +268,7 @@ export default function GradeTracker({ userId }) {
     setSyncingStudentVue(true);
     setImportError("");
     setImportStatus("Connecting to StudentVUE and syncing grades...");
+    let syncSucceeded = false;
 
     try {
       const response = await fetch("/api/grades/studentvue/sync", {
@@ -305,6 +306,7 @@ export default function GradeTracker({ userId }) {
         }.`
       );
       setImportError("");
+      syncSucceeded = true;
     } catch (syncError) {
       setImportError(
         syncError.message ||
@@ -312,7 +314,9 @@ export default function GradeTracker({ userId }) {
       );
       setImportStatus("");
     } finally {
-      setStudentVuePassword("");
+      if (syncSucceeded) {
+        setStudentVuePassword("");
+      }
       setSyncingStudentVue(false);
     }
   }

@@ -109,7 +109,7 @@ export async function POST(request) {
     const body = await request.json();
     const portalUrl = normalizePortalUrl(body?.portalUrl);
     const username = String(body?.username || "").trim();
-    const password = String(body?.password || "").trim();
+    const password = String(body?.password || "");
 
     if (!portalUrl || !username || !password) {
       return NextResponse.json(
@@ -130,10 +130,19 @@ export async function POST(request) {
 
     const studentVueModule = await import("studentvue");
     const login = studentVueModule?.login || studentVueModule?.default?.login;
+    const StudentVueClient =
+      studentVueModule?.Client || studentVueModule?.default?.Client;
 
     if (typeof login !== "function") {
       return NextResponse.json(
         { error: "StudentVUE connector is not available right now." },
+        { status: 500 }
+      );
+    }
+
+    if (typeof StudentVueClient !== "function") {
+      return NextResponse.json(
+        { error: "StudentVUE client is not available right now." },
         { status: 500 }
       );
     }
@@ -143,11 +152,14 @@ export async function POST(request) {
     const usernameCandidates = unique([
       username,
       username.includes("@") ? username.split("@")[0] : "",
+      username.toLowerCase(),
+      username.toUpperCase(),
     ]);
     const isParentGuess = /parent/i.test(parsedPortal.pathname);
     const modeCandidates = unique([isParentGuess, !isParentGuess]);
 
     let client = null;
+    let initialGradebook = null;
     let loginErrors = [];
 
     for (const portalCandidate of portalCandidates) {
@@ -177,12 +189,57 @@ export async function POST(request) {
     }
 
     if (!client) {
-      console.error("StudentVUE login failed for all attempts:", loginErrors.slice(0, 4));
+      for (const portalCandidate of portalCandidates) {
+        const parsedCandidate = new URL(portalCandidate);
+        const districtEndpoint = `https://${parsedCandidate.host}/Service/PXPCommunication.asmx`;
+        const hostUrl = `https://${parsedCandidate.host}/`;
+
+        for (const usernameCandidate of usernameCandidates) {
+          for (const isParent of modeCandidates) {
+            try {
+              const directClient = new StudentVueClient(
+                {
+                  username: usernameCandidate,
+                  password,
+                  districtUrl: districtEndpoint,
+                  isParent,
+                },
+                hostUrl
+              );
+              const directGradebook = await directClient.gradebook();
+
+              client = directClient;
+              initialGradebook = directGradebook;
+              loginErrors = [];
+              break;
+            } catch (attemptError) {
+              loginErrors.push(
+                `Direct ${
+                  isParent ? "ParentVUE" : "StudentVUE"
+                } + ${usernameCandidate}: ${
+                  attemptError?.message || "gradebook request rejected"
+                }`
+              );
+            }
+          }
+
+          if (client) break;
+        }
+
+        if (client) break;
+      }
+    }
+
+    if (!client) {
+      console.error(
+        "StudentVUE login and direct gradebook fallback failed:",
+        loginErrors.slice(0, 6)
+      );
       return NextResponse.json(
         {
           error:
-            "StudentVUE login failed. Try username without @school-domain. If your district uses SSO-only login, use CSV fallback.",
-          details: loginErrors.slice(0, 4),
+            "StudentVUE login failed. Try username without @school-domain. If district uses SSO-only auth, use CSV fallback.",
+          details: loginErrors.slice(0, 6),
         },
         { status: 401 }
       );
@@ -190,7 +247,7 @@ export async function POST(request) {
 
     let gradebook;
     try {
-      gradebook = await client.gradebook();
+      gradebook = initialGradebook || (await client.gradebook());
     } catch (error) {
       console.error("StudentVUE gradebook fetch failed:", error);
       return NextResponse.json(
