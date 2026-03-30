@@ -10,7 +10,7 @@ LifeStack is a student operating system focused on one core action loop:
 - React
 - Tailwind CSS
 - JWT auth (HTTP-only cookie)
-- JSON user store for MVP persistence
+- Firestore-backed user persistence (with local JSON fallback for development)
 - LocalStorage for tasks and saved-opportunity tracking
 - Optional Featherless API integration for personalized fit text
 
@@ -56,8 +56,17 @@ Copy `.env.example` to `.env.local` and set values as needed:
 - `FEATHERLESS_API_KEY` (optional)
 - `FEATHERLESS_BASE_URL` (optional)
 - `FEATHERLESS_MODEL` (optional)
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
 
 If Featherless keys are not provided, the app uses a built-in fallback recommendation generator.
+
+For Vercel + Firestore:
+
+- Create a Firebase service account key.
+- Copy `project_id`, `client_email`, and `private_key` into the env vars above.
+- In Vercel, paste `FIREBASE_PRIVATE_KEY` exactly from JSON (including line breaks escaped as `\n`).
 
 ## Key Files
 

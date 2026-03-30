@@ -73,7 +73,8 @@ export async function POST(request) {
     const response = NextResponse.json({ user: sanitizeUser(user) });
     response.cookies.set(authCookieName, token, authCookieOptions);
     return response;
-  } catch {
+  } catch (error) {
+    console.error("Register route failed:", error);
     return NextResponse.json(
       { error: "Unable to create account right now." },
       { status: 500 }
