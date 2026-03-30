@@ -21,7 +21,14 @@ function formatCategory(category) {
 }
 
 export default function OpportunitiesPage() {
-  const { matchedOpportunities, insights, savedItems, saveOpportunity } = useProductApp();
+  const {
+    studentProfile,
+    majorPath,
+    matchedOpportunities,
+    insights,
+    savedItems,
+    saveOpportunity,
+  } = useProductApp();
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [deadlineFilter, setDeadlineFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -194,6 +201,32 @@ export default function OpportunitiesPage() {
 
           <div className="flex items-end text-sm text-slate-600">{filtered.length} results</div>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.25)]">
+        <p className="text-xs uppercase tracking-[0.2em] text-indigo-700/80">Major-Aligned Feed</p>
+        <h3 className="mt-2 text-lg font-semibold text-indigo-950">
+          Personalized for {majorPath?.label || "your current profile"}
+        </h3>
+        <p className="mt-1 text-sm text-indigo-900/80">
+          {majorPath?.description ||
+            "Set your intended major to prioritize opportunities that fit your direction."}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(majorPath?.opportunityTags || []).slice(0, 6).map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full border border-indigo-200 bg-white px-2 py-1 text-xs text-indigo-700"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+        {studentProfile?.intendedMajor === "undecided" && !studentProfile?.majorRecommendation ? (
+          <p className="mt-3 text-xs text-indigo-800">
+            You&apos;re undecided right now. Take the major quiz in Profile to improve recommendation quality.
+          </p>
+        ) : null}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">

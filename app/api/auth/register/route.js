@@ -32,6 +32,7 @@ export async function POST(request) {
       activityHours: null,
       extracurriculars: [],
       intendedMajor: "",
+      majorRecommendation: "",
       targetRole: "",
       onboardingComplete: false,
     };

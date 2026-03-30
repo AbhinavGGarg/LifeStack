@@ -16,7 +16,10 @@ function StatCard({ label, value, hint }) {
 
 export default function DashboardPage() {
   const {
+    studentProfile,
+    majorPath,
     tasks,
+    matchedOpportunities,
     goalPlans,
     addTask,
     toggleTask,
@@ -42,6 +45,16 @@ export default function DashboardPage() {
       Number(task.estimateMinutes) > 0 &&
       Number(task.estimateMinutes) <= 20
   );
+  const majorAlignedCount = matchedOpportunities.filter(
+    (opportunity) => Array.isArray(opportunity.majorMatchingTags) && opportunity.majorMatchingTags.length > 0
+  ).length;
+  const nearTermMajorFits = matchedOpportunities.filter(
+    (opportunity) =>
+      Array.isArray(opportunity.majorMatchingTags) &&
+      opportunity.majorMatchingTags.length > 0 &&
+      opportunity.daysUntilDeadline >= 0 &&
+      opportunity.daysUntilDeadline <= 45
+  ).length;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
@@ -137,6 +150,44 @@ export default function DashboardPage() {
               ? "Small win suggestion: pick the shortest task and finish it in one uninterrupted sprint."
               : "Small win suggestion: add one 15-minute action and complete it immediately."}
         </p>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+        <p className="text-xs uppercase tracking-[0.2em] text-sky-600/80">Major Path Guidance</p>
+        <h3 className="mt-2 text-lg font-semibold text-slate-900">
+          Current direction: {majorPath?.label || "Undecided"}
+        </h3>
+        <p className="mt-1 text-sm text-slate-600">
+          {majorPath?.description ||
+            "Set your intended major (or quiz recommendation) to personalize classes, colleges, and opportunities."}
+        </p>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Suggested Classes</p>
+            <p className="mt-1 text-sm text-slate-700">
+              {majorPath?.classes?.slice(0, 3).join(" • ") || "Add a major to unlock class guidance."}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Potential Colleges</p>
+            <p className="mt-1 text-sm text-slate-700">
+              {majorPath?.colleges?.slice(0, 3).join(" • ") || "College suggestions appear after major setup."}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Opportunity Alignment</p>
+            <p className="mt-1 text-sm text-slate-700">
+              {majorAlignedCount} major-fit opportunities, {nearTermMajorFits} due in the next 45 days.
+            </p>
+          </div>
+        </div>
+
+        {studentProfile?.intendedMajor === "undecided" && !studentProfile?.majorRecommendation ? (
+          <p className="mt-3 text-xs text-amber-700">
+            You&apos;re currently undecided. Take the major quiz in Profile to unlock sharper recommendations.
+          </p>
+        ) : null}
       </section>
 
       <GoalPlanner

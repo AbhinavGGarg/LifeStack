@@ -53,6 +53,10 @@ export async function PATCH(request) {
       "extracurriculars"
     );
     const hasIntendedMajor = Object.prototype.hasOwnProperty.call(body || {}, "intendedMajor");
+    const hasMajorRecommendation = Object.prototype.hasOwnProperty.call(
+      body || {},
+      "majorRecommendation"
+    );
     const hasTargetRole = Object.prototype.hasOwnProperty.call(body || {}, "targetRole");
     const hasOnboardingComplete = Object.prototype.hasOwnProperty.call(
       body || {},
@@ -70,6 +74,9 @@ export async function PATCH(request) {
       : undefined;
     const intendedMajor = hasIntendedMajor
       ? String(body?.intendedMajor || "").trim()
+      : undefined;
+    const majorRecommendation = hasMajorRecommendation
+      ? String(body?.majorRecommendation || "").trim()
       : undefined;
     const targetRole = hasTargetRole ? String(body?.targetRole || "").trim() : undefined;
     const onboardingComplete =
@@ -117,6 +124,7 @@ export async function PATCH(request) {
     if (hasActivityHours) updates.activityHours = activityHours;
     if (hasExtracurriculars) updates.extracurriculars = extracurriculars;
     if (hasIntendedMajor) updates.intendedMajor = intendedMajor;
+    if (hasMajorRecommendation) updates.majorRecommendation = majorRecommendation;
     if (hasTargetRole) updates.targetRole = targetRole;
     if (onboardingComplete !== undefined) updates.onboardingComplete = onboardingComplete;
 

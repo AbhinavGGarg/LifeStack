@@ -25,6 +25,7 @@ function ProgressBar({ value, tone = "sky" }) {
 export default function TrajectoryPage() {
   const {
     studentProfile,
+    majorPath,
     goalPlans,
     executionScore,
     streakDays,
@@ -122,6 +123,9 @@ export default function TrajectoryPage() {
     }
     if (savedStatusCounts.applied < 2) {
       actions.push("Push pipeline action: move two opportunities from saved to applying.");
+    }
+    if (studentProfile?.intendedMajor === "undecided" && !studentProfile?.majorRecommendation) {
+      actions.push("Take the major quiz in Profile so Trajectory can optimize recommendations.");
     }
     if (actions.length === 0) {
       actions.push("Maintain current pace and protect your streak with one high-impact task today.");
@@ -255,6 +259,31 @@ export default function TrajectoryPage() {
           </div>
         </section>
       </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+        <p className="text-xs uppercase tracking-[0.2em] text-sky-600/80">Major Projection Lens</p>
+        <h3 className="mt-2 text-lg font-semibold text-slate-900">
+          Path focus: {majorPath?.label || "Undecided"}
+        </h3>
+        <p className="mt-1 text-sm text-slate-600">
+          {majorPath?.description ||
+            "Set your major profile to improve the long-term path signals shown here."}
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Classes To Prioritize</p>
+            <p className="mt-1 text-sm text-slate-700">
+              {majorPath?.classes?.slice(0, 4).join(" • ") || "No class guidance yet."}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">College Direction</p>
+            <p className="mt-1 text-sm text-slate-700">
+              {majorPath?.colleges?.slice(0, 4).join(" • ") || "No college guidance yet."}
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

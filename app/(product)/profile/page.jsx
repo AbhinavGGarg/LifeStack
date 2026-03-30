@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import MajorQuiz from "@/components/MajorQuiz";
 import { useProductApp } from "@/components/ProductAppProvider";
+import {
+  MAJOR_OPTIONS,
+  getMajorLabel,
+  getMajorTrack,
+  resolveMajor,
+} from "@/lib/majorGuidance";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -43,6 +50,9 @@ export default function ProfilePage() {
   const [intendedMajorInput, setIntendedMajorInput] = useState(
     user.profile.intendedMajor || ""
   );
+  const [majorRecommendationInput, setMajorRecommendationInput] = useState(
+    user.profile.majorRecommendation || ""
+  );
   const [targetRoleInput, setTargetRoleInput] = useState(user.profile.targetRole || "");
   const [saving, setSaving] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -70,6 +80,7 @@ export default function ProfilePage() {
         : ""
     );
     setIntendedMajorInput(user.profile.intendedMajor || "");
+    setMajorRecommendationInput(user.profile.majorRecommendation || "");
     setTargetRoleInput(user.profile.targetRole || "");
   }, [
     user.profile.extracurriculars,
@@ -78,8 +89,19 @@ export default function ProfilePage() {
     user.profile.gpa,
     user.profile.interests,
     user.profile.intendedMajor,
+    user.profile.majorRecommendation,
     user.profile.targetRole,
   ]);
+
+  const activeMajorKey = useMemo(
+    () => resolveMajor(intendedMajorInput, majorRecommendationInput),
+    [intendedMajorInput, majorRecommendationInput]
+  );
+  const activeMajorLabel = useMemo(() => getMajorLabel(activeMajorKey), [activeMajorKey]);
+  const majorTrack = useMemo(
+    () => getMajorTrack(intendedMajorInput, majorRecommendationInput),
+    [intendedMajorInput, majorRecommendationInput]
+  );
 
   async function handleSaveProfile() {
     setSaving(true);
@@ -94,6 +116,8 @@ export default function ProfilePage() {
         activityHours: activityHoursInput === "" ? null : Number(activityHoursInput),
         extracurriculars: extracurricularsInput,
         intendedMajor: intendedMajorInput,
+        majorRecommendation:
+          intendedMajorInput === "undecided" ? majorRecommendationInput : "",
         targetRole: targetRoleInput,
       });
       setSuccess("Profile updated successfully.");
@@ -214,13 +238,24 @@ export default function ProfilePage() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="text-sm text-slate-800">
               <span className="block text-sm font-medium">Intended Major</span>
-              <input
-                type="text"
+              <select
                 value={intendedMajorInput}
-                onChange={(event) => setIntendedMajorInput(event.target.value)}
-                placeholder="Computer Science"
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  setIntendedMajorInput(nextValue);
+                  if (nextValue !== "undecided") {
+                    setMajorRecommendationInput("");
+                  }
+                }}
                 className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
-              />
+              >
+                <option value="">Select major</option>
+                {MAJOR_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="text-sm text-slate-800">
@@ -233,6 +268,48 @@ export default function ProfilePage() {
                 className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
               />
             </label>
+          </div>
+
+          {intendedMajorInput === "undecided" ? (
+            <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Undecided Support</p>
+              <p className="text-xs text-slate-600">
+                Take the major quiz and save a recommendation so LifeStack can personalize your path.
+              </p>
+              <MajorQuiz
+                compact
+                onUseRecommendation={(result) => {
+                  setMajorRecommendationInput(result.major);
+                  setSuccess(`Saved recommendation: ${result.label}`);
+                }}
+              />
+              <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                Current recommendation:{" "}
+                {majorRecommendationInput
+                  ? getMajorLabel(majorRecommendationInput)
+                  : "Not set yet"}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Major Guidance</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{activeMajorLabel} Path</p>
+            <p className="mt-1 text-xs text-slate-600">{majorTrack.description}</p>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Suggested Classes
+                </p>
+                <p className="mt-1 text-xs text-slate-700">{majorTrack.classes.join(" • ")}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  College Targets
+                </p>
+                <p className="mt-1 text-xs text-slate-700">{majorTrack.colleges.join(" • ")}</p>
+              </div>
+            </div>
           </div>
         </section>
 

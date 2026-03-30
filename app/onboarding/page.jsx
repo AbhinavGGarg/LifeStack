@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import MajorQuiz from "@/components/MajorQuiz";
+import { MAJOR_OPTIONS, getMajorLabel } from "@/lib/majorGuidance";
 
 const initialForm = {
   gpa: "",
   activityHours: "",
   extracurriculars: "",
   intendedMajor: "",
+  majorRecommendation: "",
   targetRole: "",
 };
 
@@ -26,6 +29,7 @@ export default function OnboardingPage() {
   const [user, setUser] = useState(null);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(initialForm);
+  const [quizResult, setQuizResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -74,6 +78,7 @@ export default function OnboardingPage() {
               : String(nextUser.profile.activityHours),
           extracurriculars: toCsv(nextUser.profile.extracurriculars),
           intendedMajor: nextUser.profile.intendedMajor || "",
+          majorRecommendation: nextUser.profile.majorRecommendation || "",
           targetRole: nextUser.profile.targetRole || "",
         });
       } catch {
@@ -96,12 +101,28 @@ export default function OnboardingPage() {
     setForm((previous) => ({ ...previous, [field]: value }));
   }
 
+  function handleMajorChange(value) {
+    setForm((previous) => ({
+      ...previous,
+      intendedMajor: value,
+      majorRecommendation: value === "undecided" ? previous.majorRecommendation : "",
+    }));
+  }
+
   async function handleComplete(event) {
     event.preventDefault();
     setSaving(true);
     setError("");
 
     try {
+      if (!form.intendedMajor) {
+        throw new Error("Select your intended major.");
+      }
+
+      if (form.intendedMajor === "undecided" && !form.majorRecommendation) {
+        throw new Error("Take the major quiz to get a recommendation, or choose a major.");
+      }
+
       const response = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -110,6 +131,8 @@ export default function OnboardingPage() {
           activityHours: form.activityHours === "" ? null : Number(form.activityHours),
           extracurriculars: form.extracurriculars,
           intendedMajor: form.intendedMajor,
+          majorRecommendation:
+            form.intendedMajor === "undecided" ? form.majorRecommendation : "",
           targetRole: form.targetRole,
           onboardingComplete: true,
         }),
@@ -244,14 +267,49 @@ export default function OnboardingPage() {
 
             <label className="block text-sm text-slate-700">
               <span className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Intended Major</span>
-              <input
-                type="text"
+              <select
+                required
                 value={form.intendedMajor}
-                onChange={(event) => handleChange("intendedMajor", event.target.value)}
-                placeholder="Computer Science"
+                onChange={(event) => handleMajorChange(event.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
-              />
+              >
+                <option value="">Select your intended major</option>
+                {MAJOR_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
+
+            {form.intendedMajor === "undecided" ? (
+              <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs text-slate-600">
+                  Not sure yet is normal. Take this quiz to get your most likely-fit major direction.
+                </p>
+                <MajorQuiz
+                  compact
+                  onResult={(result) => setQuizResult(result)}
+                  onUseRecommendation={(result) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      majorRecommendation: result.major,
+                    }))
+                  }
+                />
+                {form.majorRecommendation ? (
+                  <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                    Current recommendation: {getMajorLabel(form.majorRecommendation)}
+                  </p>
+                ) : null}
+                {quizResult && !form.majorRecommendation ? (
+                  <p className="text-xs text-slate-600">
+                    Recommendation ready: {quizResult.label}. Click{" "}
+                    <span className="font-medium">Use This Major</span> to save it.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             <label className="block text-sm text-slate-700">
               <span className="mb-1 block text-xs uppercase tracking-wide text-slate-500">

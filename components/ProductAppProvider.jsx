@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { opportunities } from "@/lib/data";
 import { matchOpportunities } from "@/lib/matchingAlgorithm";
 import { createGoalPlanBlueprint } from "@/lib/planningEngine";
+import { getMajorTrack, resolveMajor } from "@/lib/majorGuidance";
 
 const AppContext = createContext(null);
 
@@ -275,10 +276,27 @@ export function ProductAppProvider({ children }) {
       activityHours: user.profile.activityHours,
       extracurriculars: user.profile.extracurriculars,
       intendedMajor: user.profile.intendedMajor,
+      majorRecommendation: user.profile.majorRecommendation,
       targetRole: user.profile.targetRole,
       onboardingComplete: user.profile.onboardingComplete,
     };
   }, [user]);
+
+  const majorPath = useMemo(() => {
+    if (!studentProfile) {
+      return null;
+    }
+
+    const resolvedMajor = resolveMajor(
+      studentProfile.intendedMajor,
+      studentProfile.majorRecommendation
+    );
+
+    return {
+      key: resolvedMajor,
+      ...getMajorTrack(studentProfile.intendedMajor, studentProfile.majorRecommendation),
+    };
+  }, [studentProfile]);
 
   const matchedOpportunities = useMemo(() => {
     if (!studentProfile) {
@@ -630,6 +648,7 @@ export function ProductAppProvider({ children }) {
                   goals: studentProfile.goals,
                   extracurriculars: studentProfile.extracurriculars,
                   intendedMajor: studentProfile.intendedMajor,
+                  majorRecommendation: studentProfile.majorRecommendation,
                   targetRole: studentProfile.targetRole,
                 },
                 opportunity,
@@ -955,6 +974,7 @@ export function ProductAppProvider({ children }) {
     savedStatusCounts,
     savedOpportunityRows,
     matchedOpportunities,
+    majorPath,
     insights,
     focusSessions,
     totalFocusMinutes,

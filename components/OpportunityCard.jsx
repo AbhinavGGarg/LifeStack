@@ -50,6 +50,12 @@ export default function OpportunityCard({
         ))}
       </div>
 
+      {Array.isArray(opportunity.majorMatchingTags) && opportunity.majorMatchingTags.length > 0 ? (
+        <p className="mb-3 inline-flex rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">
+          Major fit: {opportunity.majorMatchingTags.slice(0, 3).map((tag) => `#${tag}`).join(" ")}
+        </p>
+      ) : null}
+
       {opportunity.recommendedAction ? (
         <p className="mb-3 inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
           Recommended: {opportunity.recommendedAction}
