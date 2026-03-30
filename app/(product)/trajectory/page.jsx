@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import LineTrendChart from "@/components/LineTrendChart";
+import CollegeFitEstimator from "@/components/CollegeFitEstimator";
 import { useProductApp } from "@/components/ProductAppProvider";
 import { isUndecidedMajor } from "@/lib/majorGuidance";
 
@@ -285,6 +286,8 @@ export default function TrajectoryPage() {
           </div>
         </div>
       </section>
+
+      <CollegeFitEstimator studentProfile={studentProfile} />
     </div>
   );
 }

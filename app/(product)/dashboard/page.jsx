@@ -2,6 +2,7 @@
 
 import GoalPlanner from "@/components/GoalPlanner";
 import TaskList from "@/components/TaskList";
+import GradeTracker from "@/components/GradeTracker";
 import { useProductApp } from "@/components/ProductAppProvider";
 import { isUndecidedMajor } from "@/lib/majorGuidance";
 
@@ -199,6 +200,8 @@ export default function DashboardPage() {
         onAddGoalSuggestionAsTask={addGoalSuggestionAsTask}
         onRemoveGoalPlan={removeGoalPlan}
       />
+
+      <GradeTracker key={studentProfile?.id || "student"} userId={studentProfile?.id} />
 
       <TaskList
         tasks={tasks}
