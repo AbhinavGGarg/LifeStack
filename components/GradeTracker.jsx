@@ -285,7 +285,9 @@ export default function GradeTracker({ userId }) {
       const payload = await response.json();
 
       if (!response.ok) {
-        throw new Error(payload?.error || "Unable to sync grades right now.");
+        const details = Array.isArray(payload?.details) ? payload.details.filter(Boolean) : [];
+        const detailText = details.length > 0 ? ` (${details[0]})` : "";
+        throw new Error((payload?.error || "Unable to sync grades right now.") + detailText);
       }
 
       const importedCourses = Array.isArray(payload?.courses) ? payload.courses : [];

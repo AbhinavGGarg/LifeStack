@@ -16,6 +16,10 @@ function normalizePortalUrl(input) {
   return `https://${raw}`;
 }
 
+function unique(items) {
+  return Array.from(new Set(items.filter(Boolean)));
+}
+
 function parsePercentFromMark(mark) {
   const raw = Number(mark?.calculatedScore?.raw);
   if (Number.isFinite(raw)) {
@@ -124,11 +128,8 @@ export async function POST(request) {
       );
     }
 
-    const isParent = /parent/i.test(parsedPortal.pathname);
-
     const studentVueModule = await import("studentvue");
-    const login =
-      studentVueModule?.login || studentVueModule?.default?.login;
+    const login = studentVueModule?.login || studentVueModule?.default?.login;
 
     if (typeof login !== "function") {
       return NextResponse.json(
@@ -137,25 +138,69 @@ export async function POST(request) {
       );
     }
 
-    let client;
-    try {
-      client = await login(parsedPortal.toString(), {
-        username,
-        password,
-        isParent,
-      });
-    } catch (error) {
-      console.error("StudentVUE login failed:", error);
+    const basePortalUrl = `${parsedPortal.protocol}//${parsedPortal.host}/`;
+    const portalCandidates = unique([parsedPortal.toString(), basePortalUrl]);
+    const usernameCandidates = unique([
+      username,
+      username.includes("@") ? username.split("@")[0] : "",
+    ]);
+    const isParentGuess = /parent/i.test(parsedPortal.pathname);
+    const modeCandidates = unique([isParentGuess, !isParentGuess]);
+
+    let client = null;
+    let loginErrors = [];
+
+    for (const portalCandidate of portalCandidates) {
+      for (const usernameCandidate of usernameCandidates) {
+        for (const isParent of modeCandidates) {
+          try {
+            client = await login(portalCandidate, {
+              username: usernameCandidate,
+              password,
+              isParent,
+            });
+            loginErrors = [];
+            break;
+          } catch (attemptError) {
+            loginErrors.push(
+              `${isParent ? "ParentVUE" : "StudentVUE"} + ${usernameCandidate}: ${
+                attemptError?.message || "login rejected"
+              }`
+            );
+          }
+        }
+
+        if (client) break;
+      }
+
+      if (client) break;
+    }
+
+    if (!client) {
+      console.error("StudentVUE login failed for all attempts:", loginErrors.slice(0, 4));
       return NextResponse.json(
         {
           error:
-            "StudentVUE login failed. Check portal link, username, and password.",
+            "StudentVUE login failed. Try username without @school-domain. If your district uses SSO-only login, use CSV fallback.",
+          details: loginErrors.slice(0, 4),
         },
         { status: 401 }
       );
     }
 
-    let gradebook = await client.gradebook();
+    let gradebook;
+    try {
+      gradebook = await client.gradebook();
+    } catch (error) {
+      console.error("StudentVUE gradebook fetch failed:", error);
+      return NextResponse.json(
+        {
+          error:
+            "Connected to StudentVUE but gradebook could not be fetched for this account. Use CSV fallback if needed.",
+        },
+        { status: 422 }
+      );
+    }
     let courses = extractCoursesFromGradebook(gradebook);
 
     if (courses.length === 0) {
