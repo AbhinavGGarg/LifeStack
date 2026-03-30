@@ -44,7 +44,11 @@ export default function TrackerPage() {
   } = useProductApp();
 
   const [windowFilter, setWindowFilter] = useState("weekly");
-  const [reflectionInput, setReflectionInput] = useState(reflectionToday);
+  const [reflectionDraft, setReflectionDraft] = useState("");
+  const [hasReflectionDraft, setHasReflectionDraft] = useState(false);
+  const [reflectionSavedAt, setReflectionSavedAt] = useState("");
+  const [reflectionStatus, setReflectionStatus] = useState("idle");
+  const reflectionInput = hasReflectionDraft ? reflectionDraft : reflectionToday || "";
 
   const days = windowFilter === "daily" ? 1 : windowFilter === "weekly" ? 7 : 30;
   const scopedActivity = activityTimeline.slice(-days);
@@ -82,6 +86,19 @@ export default function TrackerPage() {
       weakDay: weakDay?.dateKey || "N/A",
     };
   }, [focusSessions, scopedActivity, tasks]);
+
+  function handleSaveReflection() {
+    setReflectionStatus("saving");
+    saveDailyReflection(reflectionInput);
+    setHasReflectionDraft(false);
+    setReflectionSavedAt(
+      new Date().toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    );
+    setReflectionStatus("saved");
+  }
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
@@ -159,17 +176,29 @@ export default function TrackerPage() {
           <p className="mt-1 text-sm text-slate-600">What got in the way today?</p>
           <textarea
             value={reflectionInput}
-            onChange={(event) => setReflectionInput(event.target.value)}
+            onChange={(event) => {
+              setHasReflectionDraft(true);
+              setReflectionDraft(event.target.value);
+              if (reflectionStatus !== "idle") {
+                setReflectionStatus("idle");
+              }
+            }}
             rows={4}
             className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
           />
           <button
             type="button"
-            onClick={() => saveDailyReflection(reflectionInput)}
+            onClick={handleSaveReflection}
             className="mt-3 rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
           >
-            Save Reflection
+            {reflectionStatus === "saving" ? "Saving..." : "Save Reflection"}
           </button>
+
+          {reflectionStatus === "saved" ? (
+            <p className="mt-2 text-xs text-emerald-700">
+              Reflection saved{reflectionSavedAt ? ` at ${reflectionSavedAt}` : ""}.
+            </p>
+          ) : null}
         </section>
       </div>
 
