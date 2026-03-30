@@ -26,6 +26,12 @@ export default function LoginPage() {
   );
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setIsSignup(params.get("mode") === "signup");
+    setError("");
+  }, []);
+
+  useEffect(() => {
     let active = true;
 
     async function checkSession() {
