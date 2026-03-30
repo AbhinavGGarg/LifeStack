@@ -11,6 +11,13 @@ export default function ProfilePage() {
     tasks,
     completedTaskCount,
     savedItems,
+    goalPlans,
+    executionScore,
+    streakDays,
+    totalFocusMinutes,
+    focusMinutesWeek,
+    preferences,
+    updatePreferences,
     updateProfile,
     logout,
     loggingOut,
@@ -128,6 +135,10 @@ export default function ProfilePage() {
       if (user?.id) {
         localStorage.removeItem(`lifestack:${user.id}:tasks`);
         localStorage.removeItem(`lifestack:${user.id}:saved`);
+        localStorage.removeItem(`lifestack:${user.id}:focusSessions`);
+        localStorage.removeItem(`lifestack:${user.id}:goalPlans`);
+        localStorage.removeItem(`lifestack:${user.id}:reflections`);
+        localStorage.removeItem(`lifestack:${user.id}:preferences`);
       }
 
       router.replace("/login");
@@ -226,11 +237,16 @@ export default function ProfilePage() {
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
-          <h3 className="text-lg font-semibold text-slate-900">Current Stats</h3>
+          <h3 className="text-lg font-semibold text-slate-900">Execution Stats</h3>
           <div className="mt-3 space-y-2 text-sm text-slate-600">
             <p>Total Tasks: {tasks.length}</p>
             <p>Completed Tasks: {completedTaskCount}</p>
             <p>Saved Opportunities: {savedItems.length}</p>
+            <p>Active Goals: {goalPlans.length}</p>
+            <p>Execution Score: {executionScore}</p>
+            <p>Streak: {streakDays} days</p>
+            <p>Focus Time (All): {Math.round(totalFocusMinutes / 60)}h</p>
+            <p>Focus This Week: {focusMinutesWeek} min</p>
           </div>
           <button
             type="button"
@@ -269,6 +285,56 @@ export default function ProfilePage() {
         >
           {saving ? "Saving..." : "Save Profile"}
         </button>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+        <h3 className="text-lg font-semibold text-slate-900">Preferences</h3>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {[
+            { key: "dailyReminder", label: "Daily reminders" },
+            { key: "weeklySummary", label: "Weekly summary nudges" },
+            { key: "motivationalNudges", label: "Motivational prompts" },
+            { key: "compactCards", label: "Compact dashboard cards" },
+          ].map((item) => (
+            <label
+              key={item.key}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+            >
+              <input
+                type="checkbox"
+                checked={Boolean(preferences[item.key])}
+                onChange={(event) =>
+                  updatePreferences({
+                    [item.key]: event.target.checked,
+                  })
+                }
+                className="h-4 w-4 rounded border-slate-300 accent-sky-500"
+              />
+              {item.label}
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+        <h3 className="text-lg font-semibold text-slate-900">Saved Opportunities Snapshot</h3>
+        {savedItems.length === 0 ? (
+          <p className="mt-2 text-sm text-slate-600">
+            No opportunities saved yet. Head to Opportunities and start your pipeline.
+          </p>
+        ) : (
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              Total saved: {savedItems.length}
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              Ready to apply: {savedItems.filter((item) => item.status === "saved").length}
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              Applied: {savedItems.filter((item) => item.status === "applied").length}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.35)]">

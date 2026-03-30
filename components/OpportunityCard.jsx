@@ -11,6 +11,12 @@ function formatDeadline(date) {
   });
 }
 
+function formatCategory(category) {
+  return String(category || "")
+    .replace(/-/g, " ")
+    .trim();
+}
+
 export default function OpportunityCard({
   opportunity,
   insight,
@@ -24,7 +30,7 @@ export default function OpportunityCard({
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] uppercase tracking-widest text-sky-700">
-            {opportunity.category}
+            {formatCategory(opportunity.category)}
           </span>
           <h3 className="mt-2 text-base font-semibold text-slate-900">{opportunity.title}</h3>
         </div>
@@ -49,6 +55,10 @@ export default function OpportunityCard({
           Recommended: {opportunity.recommendedAction}
         </p>
       ) : null}
+
+      <p className="mb-3 inline-flex rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+        Match score: {opportunity.matchScore}
+      </p>
 
       <p className="mb-4 text-xs text-slate-500">{insight || "Finding a personalized recommendation..."}</p>
 
