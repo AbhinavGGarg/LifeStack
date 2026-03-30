@@ -297,6 +297,24 @@ export function ProductAppProvider({ children }) {
     setSavedItems((previous) => previous.filter((item) => item.id !== itemId));
   }
 
+  async function updateProfile(updates) {
+    const response = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload?.error || "Unable to update profile.");
+    }
+
+    setUser(payload.user);
+    setInsights({});
+    return payload.user;
+  }
+
   async function logout() {
     setLoggingOut(true);
 
@@ -326,6 +344,7 @@ export function ProductAppProvider({ children }) {
     saveOpportunity,
     updateSavedStatus,
     removeSavedItem,
+    updateProfile,
     logout,
   };
 
