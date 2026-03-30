@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useProductApp } from "@/components/ProductAppProvider";
 
 export default function ProfilePage() {
+  const router = useRouter();
   const {
     user,
     tasks,
@@ -36,8 +38,11 @@ export default function ProfilePage() {
   );
   const [targetRoleInput, setTargetRoleInput] = useState(user.profile.targetRole || "");
   const [saving, setSaving] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     setInterestsInput(user.profile.interests.join(", "));
@@ -89,6 +94,47 @@ export default function ProfilePage() {
       setError(saveError.message || "Unable to update profile.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteConfirmInput.trim() !== "DELETE") {
+      setDeleteError("Type DELETE to confirm account deletion.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Delete your LifeStack account permanently? This cannot be undone."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingAccount(true);
+    setDeleteError("");
+
+    try {
+      const response = await fetch("/api/profile", {
+        method: "DELETE",
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Unable to delete account.");
+      }
+
+      if (user?.id) {
+        localStorage.removeItem(`lifestack:${user.id}:tasks`);
+        localStorage.removeItem(`lifestack:${user.id}:saved`);
+      }
+
+      router.replace("/login");
+    } catch (deleteAccountError) {
+      setDeleteError(deleteAccountError.message || "Unable to delete account.");
+    } finally {
+      setDeletingAccount(false);
     }
   }
 
@@ -222,6 +268,38 @@ export default function ProfilePage() {
           className="mt-4 rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {saving ? "Saving..." : "Save Profile"}
+        </button>
+      </section>
+
+      <section className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.35)]">
+        <h3 className="text-lg font-semibold text-rose-800">Danger Zone</h3>
+        <p className="mt-2 text-sm text-rose-700">
+          Delete your account and profile data permanently.
+        </p>
+
+        <label className="mt-3 block text-sm font-medium text-rose-800">
+          Type <span className="font-semibold">DELETE</span> to confirm
+        </label>
+        <input
+          type="text"
+          value={deleteConfirmInput}
+          onChange={(event) => setDeleteConfirmInput(event.target.value)}
+          className="mt-2 w-full rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-rose-300 focus:outline-none"
+        />
+
+        {deleteError ? (
+          <p className="mt-3 rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm text-rose-700">
+            {deleteError}
+          </p>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={handleDeleteAccount}
+          disabled={deletingAccount || deleteConfirmInput.trim() !== "DELETE"}
+          className="mt-4 rounded-xl border border-rose-300 bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {deletingAccount ? "Deleting account..." : "Delete Account"}
         </button>
       </section>
     </div>

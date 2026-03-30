@@ -7,8 +7,6 @@ const initialForm = {
   gpa: "",
   activityHours: "",
   extracurriculars: "",
-  interests: "",
-  goals: "",
   intendedMajor: "",
   targetRole: "",
 };
@@ -75,8 +73,6 @@ export default function OnboardingPage() {
               ? ""
               : String(nextUser.profile.activityHours),
           extracurriculars: toCsv(nextUser.profile.extracurriculars),
-          interests: toCsv(nextUser.profile.interests),
-          goals: nextUser.profile.goals || "",
           intendedMajor: nextUser.profile.intendedMajor || "",
           targetRole: nextUser.profile.targetRole || "",
         });
@@ -110,8 +106,6 @@ export default function OnboardingPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          interests: form.interests,
-          goals: form.goals,
           gpa: form.gpa === "" ? null : Number(form.gpa),
           activityHours: form.activityHours === "" ? null : Number(form.activityHours),
           extracurriculars: form.extracurriculars,
@@ -249,51 +243,25 @@ export default function OnboardingPage() {
             </label>
 
             <label className="block text-sm text-slate-700">
-              <span className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Interests</span>
+              <span className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Intended Major</span>
               <input
-                required
                 type="text"
-                value={form.interests}
-                onChange={(event) => handleChange("interests", event.target.value)}
-                placeholder="ai, business, biology"
+                value={form.intendedMajor}
+                onChange={(event) => handleChange("intendedMajor", event.target.value)}
+                placeholder="Computer Science"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
               />
             </label>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="text-sm text-slate-700">
-                <span className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Intended Major</span>
-                <input
-                  type="text"
-                  value={form.intendedMajor}
-                  onChange={(event) => handleChange("intendedMajor", event.target.value)}
-                  placeholder="Computer Science"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
-                />
-              </label>
-
-              <label className="text-sm text-slate-700">
-                <span className="mb-1 block text-xs uppercase tracking-wide text-slate-500">
-                  Target Career Direction
-                </span>
-                <input
-                  type="text"
-                  value={form.targetRole}
-                  onChange={(event) => handleChange("targetRole", event.target.value)}
-                  placeholder="Product Manager, ML Engineer"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
-                />
-              </label>
-            </div>
-
             <label className="block text-sm text-slate-700">
-              <span className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Goals</span>
-              <textarea
-                required
-                value={form.goals}
-                onChange={(event) => handleChange("goals", event.target.value)}
-                rows={3}
-                placeholder="Get into a strong summer program and ship 2 portfolio projects."
+              <span className="mb-1 block text-xs uppercase tracking-wide text-slate-500">
+                Target Career Direction
+              </span>
+              <input
+                type="text"
+                value={form.targetRole}
+                onChange={(event) => handleChange("targetRole", event.target.value)}
+                placeholder="Product Manager, ML Engineer"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
               />
             </label>
