@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const gradeOptions = ["9", "10", "11", "12", "college"];
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [isSignup, setIsSignup] = useState(false);
   const [form, setForm] = useState(initialForm);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -23,6 +24,46 @@ export default function LoginPage() {
     () => (isSignup ? "Create your LifeStack account" : "Welcome back to LifeStack"),
     [isSignup]
   );
+
+  useEffect(() => {
+    let active = true;
+
+    async function checkSession() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = await response.json();
+        const user = payload?.user;
+
+        if (!active || !user) {
+          return;
+        }
+
+        if (user?.profile?.onboardingComplete === false) {
+          router.replace("/onboarding");
+        } else {
+          router.replace("/dashboard");
+        }
+      } finally {
+        if (active) {
+          setCheckingSession(false);
+        }
+      }
+    }
+
+    checkSession();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   function handleChange(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -69,6 +110,14 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkingSession) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.18),transparent_40%),radial-gradient(circle_at_90%_90%,rgba(20,184,166,0.14),transparent_35%),#f4f7fb] px-4 py-10">
+        <p className="animate-pulse text-sm tracking-wide text-slate-600">Loading...</p>
+      </main>
+    );
   }
 
   return (
