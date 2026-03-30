@@ -40,6 +40,111 @@ function normalizePortalUrl(input) {
   return `https://${raw}`;
 }
 
+function parseNumericGradeToken(rawToken) {
+  const value = String(rawToken || "").trim();
+
+  if (!value) {
+    return null;
+  }
+
+  const numeric = Number(value.replace(/[^0-9.]+/g, ""));
+  if (Number.isFinite(numeric) && numeric >= 0 && numeric <= 100) {
+    return numeric;
+  }
+
+  const letter = value.toUpperCase();
+  if (letter.startsWith("A+")) return 99;
+  if (letter.startsWith("A")) return 95;
+  if (letter.startsWith("B+")) return 88;
+  if (letter.startsWith("B")) return 85;
+  if (letter.startsWith("C+")) return 78;
+  if (letter.startsWith("C")) return 75;
+  if (letter.startsWith("D+")) return 68;
+  if (letter.startsWith("D")) return 65;
+  if (letter.startsWith("F")) return 55;
+
+  return null;
+}
+
+function parseQuickCourseRows(text) {
+  const rows = String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const imported = [];
+
+  rows.forEach((row) => {
+    const tabCells = row.split("\t").map((cell) => cell.trim()).filter(Boolean);
+    if (tabCells.length >= 2) {
+      const gradeCell = [...tabCells]
+        .reverse()
+        .find((cell) => parseNumericGradeToken(cell) !== null);
+
+      if (gradeCell) {
+        const grade = parseNumericGradeToken(gradeCell);
+        const name = tabCells[0];
+
+        if (name && grade !== null) {
+          imported.push({
+            id: crypto.randomUUID(),
+            name,
+            grade: Number(grade.toFixed(2)),
+            target: 90,
+          });
+          return;
+        }
+      }
+    }
+
+    const csvCells = row.split(",").map((cell) => cell.trim()).filter(Boolean);
+    if (csvCells.length >= 2) {
+      const name = csvCells[0];
+      const grade = parseNumericGradeToken(csvCells[csvCells.length - 1]);
+
+      if (name && grade !== null) {
+        imported.push({
+          id: crypto.randomUUID(),
+          name,
+          grade: Number(grade.toFixed(2)),
+          target: 90,
+        });
+        return;
+      }
+    }
+
+    const patternMatch = row.match(
+      /^(.*?)(?:\s*[-:|]\s*|\s+)(\d{1,3}(?:\.\d+)?%?|A\+|A-|A|B\+|B-|B|C\+|C-|C|D\+|D-|D|F)$/
+    );
+
+    if (!patternMatch) {
+      return;
+    }
+
+    const name = String(patternMatch[1] || "").trim();
+    const grade = parseNumericGradeToken(patternMatch[2]);
+
+    if (!name || grade === null) {
+      return;
+    }
+
+    imported.push({
+      id: crypto.randomUUID(),
+      name,
+      grade: Number(grade.toFixed(2)),
+      target: 90,
+    });
+  });
+
+  const byName = new Map();
+  imported.forEach((course) => {
+    const key = course.name.toLowerCase();
+    byName.set(key, course);
+  });
+
+  return Array.from(byName.values());
+}
+
 export default function GradeTracker({ userId }) {
   const coursesStorageKey = `lifestack:${userId}:courses`;
   const portalStorageKey = `lifestack:${userId}:studentvuePortal`;
@@ -73,6 +178,7 @@ export default function GradeTracker({ userId }) {
     return String(localStorage.getItem(portalUsernameKey) || "").trim();
   });
   const [studentVuePassword, setStudentVuePassword] = useState("");
+  const [quickPaste, setQuickPaste] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const [importError, setImportError] = useState("");
   const [syncingStudentVue, setSyncingStudentVue] = useState(false);
@@ -325,6 +431,23 @@ export default function GradeTracker({ userId }) {
     setCourses((previous) => previous.filter((course) => course.id !== courseId));
   }
 
+  function handleQuickPasteImport() {
+    const parsed = parseQuickCourseRows(quickPaste);
+
+    if (parsed.length === 0) {
+      setImportError(
+        "Could not parse pasted rows. Use format like: US History - 91 or AP Calc, 88."
+      );
+      setImportStatus("");
+      return;
+    }
+
+    mergeImportedCourses(parsed);
+    setQuickPaste("");
+    setImportStatus(`Quick import complete: ${parsed.length} courses added.`);
+    setImportError("");
+  }
+
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -406,6 +529,30 @@ export default function GradeTracker({ userId }) {
               Last import: {new Date(lastImportedAt).toLocaleString()}
             </p>
           ) : null}
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <p className="text-xs uppercase tracking-wide text-slate-500">Quick Import (No CSV)</p>
+        <p className="mt-1 text-xs text-slate-600">
+          Paste one course per line. Examples: <span className="font-medium">US History - 91</span>,
+          <span className="font-medium"> AP Calc, 88</span>, <span className="font-medium">Biology A-</span>.
+        </p>
+        <textarea
+          value={quickPaste}
+          onChange={(event) => setQuickPaste(event.target.value)}
+          rows={4}
+          placeholder={`US History - 91\nAP Calculus BC - 88\nChemistry A-`}
+          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
+        />
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={handleQuickPasteImport}
+            className="rounded-xl bg-sky-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-sky-600"
+          >
+            Import Pasted Grades
+          </button>
         </div>
       </div>
 
