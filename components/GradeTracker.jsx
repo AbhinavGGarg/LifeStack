@@ -26,11 +26,24 @@ function average(values) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+function normalizePortalUrl(input) {
+  const raw = String(input || "").trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(raw)) {
+    return raw;
+  }
+
+  return `https://${raw}`;
+}
+
 export default function GradeTracker({ userId }) {
   const coursesStorageKey = `lifestack:${userId}:courses`;
   const portalStorageKey = `lifestack:${userId}:studentvuePortal`;
   const importMetaKey = `lifestack:${userId}:gradeImportMeta`;
-  const csvUrlStorageKey = `lifestack:${userId}:gradeCsvUrl`;
 
   const [courses, setCourses] = useState(() => {
     if (typeof window === "undefined" || !userId) {
@@ -50,13 +63,6 @@ export default function GradeTracker({ userId }) {
     }
 
     return String(localStorage.getItem(portalStorageKey) || "").trim();
-  });
-  const [csvUrl, setCsvUrl] = useState(() => {
-    if (typeof window === "undefined" || !userId) {
-      return "";
-    }
-
-    return String(localStorage.getItem(csvUrlStorageKey) || "").trim();
   });
   const [importStatus, setImportStatus] = useState("");
   const [importError, setImportError] = useState("");
@@ -96,14 +102,6 @@ export default function GradeTracker({ userId }) {
 
     localStorage.setItem(importMetaKey, lastImportedAt);
   }, [importMetaKey, lastImportedAt, userId]);
-
-  useEffect(() => {
-    if (!userId) {
-      return;
-    }
-
-    localStorage.setItem(csvUrlStorageKey, csvUrl);
-  }, [csvUrl, csvUrlStorageKey, userId]);
 
   const currentAverage = useMemo(() => {
     const grades = courses
@@ -208,27 +206,31 @@ export default function GradeTracker({ userId }) {
     }
   }
 
-  async function handleCsvUrlImport() {
-    if (!csvUrl.trim()) {
-      setImportError("Paste a CSV export URL first.");
+  function handleOpenPortal() {
+    if (!studentVuePortal.trim()) {
+      setImportError("Enter your StudentVUE portal link first.");
       setImportStatus("");
       return;
     }
 
+    const normalized = normalizePortalUrl(studentVuePortal);
+    let parsedUrl;
+
     try {
-      const response = await fetch(csvUrl, { method: "GET" });
-
-      if (!response.ok) {
-        throw new Error("Could not fetch CSV URL.");
-      }
-
-      const text = await response.text();
-      importFromCsvText(text);
+      parsedUrl = new URL(normalized);
     } catch {
-      setImportError(
-        "Direct URL import failed. StudentVUE often blocks authenticated exports via browser CORS. Download CSV from StudentVUE and upload it below."
-      );
+      setImportError("That portal link looks invalid. Paste the full StudentVUE URL.");
       setImportStatus("");
+      return;
+    }
+
+    setStudentVuePortal(parsedUrl.toString());
+    setImportError("");
+    setImportStatus("Portal saved. Opening StudentVUE...");
+
+    const opened = window.open(parsedUrl.toString(), "_blank", "noopener,noreferrer");
+    if (!opened) {
+      window.location.assign(parsedUrl.toString());
     }
   }
 
@@ -252,34 +254,33 @@ export default function GradeTracker({ userId }) {
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
           <p className="text-xs uppercase tracking-wide text-slate-500">StudentVUE Portal</p>
           <p className="mt-1 text-xs text-slate-600">
-            Add your StudentVUE link for quick access. Direct sync depends on district permissions.
+            Save your StudentVUE portal for one-click access. Grade auto-sync is blocked by district login security.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <input
               type="url"
               value={studentVuePortal}
               onChange={(event) => setStudentVuePortal(event.target.value)}
-              placeholder="https://studentvue.yourschool.org"
+              placeholder="studentvue.yourschool.org (or full https:// link)"
               className="min-w-[220px] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
             />
             <button
               type="button"
-              onClick={() => {
-                if (studentVuePortal.trim()) {
-                  window.open(studentVuePortal.trim(), "_blank", "noopener,noreferrer");
-                }
-              }}
+              onClick={handleOpenPortal}
               className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
             >
-              Open Portal
+              Save + Open Portal
             </button>
           </div>
+          <p className="mt-2 text-xs text-slate-500">
+            Tip: after logging in, export your grades CSV and upload it below to sync course data.
+          </p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">CSV Import</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">CSV Import (Optional)</p>
           <p className="mt-1 text-xs text-slate-600">
-            Upload exported grades CSV from StudentVUE, or import from a direct CSV URL.
+            Upload your exported grades CSV from StudentVUE to populate classes automatically.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <input
@@ -288,22 +289,6 @@ export default function GradeTracker({ userId }) {
               onChange={handleCsvFileChange}
               className="min-w-[220px] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-medium"
             />
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <input
-              type="url"
-              value={csvUrl}
-              onChange={(event) => setCsvUrl(event.target.value)}
-              placeholder="Optional: direct CSV export URL"
-              className="min-w-[220px] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={handleCsvUrlImport}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
-            >
-              Import URL
-            </button>
           </div>
           {lastImportedAt ? (
             <p className="mt-2 text-xs text-slate-500">
