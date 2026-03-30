@@ -30,6 +30,7 @@ export default function GradeTracker({ userId }) {
   const coursesStorageKey = `lifestack:${userId}:courses`;
   const portalStorageKey = `lifestack:${userId}:studentvuePortal`;
   const importMetaKey = `lifestack:${userId}:gradeImportMeta`;
+  const csvUrlStorageKey = `lifestack:${userId}:gradeCsvUrl`;
 
   const [courses, setCourses] = useState(() => {
     if (typeof window === "undefined" || !userId) {
@@ -50,7 +51,13 @@ export default function GradeTracker({ userId }) {
 
     return String(localStorage.getItem(portalStorageKey) || "").trim();
   });
-  const [csvUrl, setCsvUrl] = useState("");
+  const [csvUrl, setCsvUrl] = useState(() => {
+    if (typeof window === "undefined" || !userId) {
+      return "";
+    }
+
+    return String(localStorage.getItem(csvUrlStorageKey) || "").trim();
+  });
   const [importStatus, setImportStatus] = useState("");
   const [importError, setImportError] = useState("");
   const [lastImportedAt, setLastImportedAt] = useState(() => {
@@ -89,6 +96,14 @@ export default function GradeTracker({ userId }) {
 
     localStorage.setItem(importMetaKey, lastImportedAt);
   }, [importMetaKey, lastImportedAt, userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    localStorage.setItem(csvUrlStorageKey, csvUrl);
+  }, [csvUrl, csvUrlStorageKey, userId]);
 
   const currentAverage = useMemo(() => {
     const grades = courses
