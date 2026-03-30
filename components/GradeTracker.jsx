@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { parseCoursesFromCsv } from "@/lib/gradeImport";
 
 function toPoints(grade) {
   const value = Number(grade);
@@ -26,7 +27,9 @@ function average(values) {
 }
 
 export default function GradeTracker({ userId }) {
-  const storageKey = `lifestack:${userId}:courses`;
+  const coursesStorageKey = `lifestack:${userId}:courses`;
+  const portalStorageKey = `lifestack:${userId}:studentvuePortal`;
+  const importMetaKey = `lifestack:${userId}:gradeImportMeta`;
 
   const [courses, setCourses] = useState(() => {
     if (typeof window === "undefined" || !userId) {
@@ -34,11 +37,28 @@ export default function GradeTracker({ userId }) {
     }
 
     try {
-      const parsed = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      const parsed = JSON.parse(localStorage.getItem(coursesStorageKey) || "[]");
       return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
+  });
+  const [studentVuePortal, setStudentVuePortal] = useState(() => {
+    if (typeof window === "undefined" || !userId) {
+      return "";
+    }
+
+    return String(localStorage.getItem(portalStorageKey) || "").trim();
+  });
+  const [csvUrl, setCsvUrl] = useState("");
+  const [importStatus, setImportStatus] = useState("");
+  const [importError, setImportError] = useState("");
+  const [lastImportedAt, setLastImportedAt] = useState(() => {
+    if (typeof window === "undefined" || !userId) {
+      return "";
+    }
+
+    return String(localStorage.getItem(importMetaKey) || "").trim();
   });
   const [form, setForm] = useState({
     name: "",
@@ -51,8 +71,24 @@ export default function GradeTracker({ userId }) {
       return;
     }
 
-    localStorage.setItem(storageKey, JSON.stringify(courses));
-  }, [courses, storageKey, userId]);
+    localStorage.setItem(coursesStorageKey, JSON.stringify(courses));
+  }, [courses, coursesStorageKey, userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    localStorage.setItem(portalStorageKey, studentVuePortal);
+  }, [portalStorageKey, studentVuePortal, userId]);
+
+  useEffect(() => {
+    if (!userId || !lastImportedAt) {
+      return;
+    }
+
+    localStorage.setItem(importMetaKey, lastImportedAt);
+  }, [importMetaKey, lastImportedAt, userId]);
 
   const currentAverage = useMemo(() => {
     const grades = courses
@@ -90,6 +126,97 @@ export default function GradeTracker({ userId }) {
     setForm({ name: "", grade: "", target: "90" });
   }
 
+  function mergeImportedCourses(imported) {
+    if (!Array.isArray(imported) || imported.length === 0) {
+      return;
+    }
+
+    setCourses((previous) => {
+      const byName = new Map(
+        previous.map((course) => [String(course.name || "").trim().toLowerCase(), course])
+      );
+
+      imported.forEach((course) => {
+        const key = String(course.name || "").trim().toLowerCase();
+
+        if (!key) {
+          return;
+        }
+
+        const existing = byName.get(key);
+        byName.set(key, {
+          id: existing?.id || crypto.randomUUID(),
+          name: course.name,
+          grade: Number(course.grade),
+          target: Number(course.target),
+        });
+      });
+
+      return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
+    });
+
+    const timestamp = new Date().toISOString();
+    setLastImportedAt(timestamp);
+    setImportStatus(`Imported ${imported.length} courses successfully.`);
+    setImportError("");
+  }
+
+  function importFromCsvText(csvText) {
+    const parsed = parseCoursesFromCsv(csvText);
+
+    if (parsed.length === 0) {
+      setImportError(
+        "No valid course rows found. Make sure CSV has course/class and grade columns."
+      );
+      setImportStatus("");
+      return;
+    }
+
+    mergeImportedCourses(parsed);
+  }
+
+  async function handleCsvFileChange(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      importFromCsvText(text);
+    } catch {
+      setImportError("Unable to read CSV file.");
+      setImportStatus("");
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  async function handleCsvUrlImport() {
+    if (!csvUrl.trim()) {
+      setImportError("Paste a CSV export URL first.");
+      setImportStatus("");
+      return;
+    }
+
+    try {
+      const response = await fetch(csvUrl, { method: "GET" });
+
+      if (!response.ok) {
+        throw new Error("Could not fetch CSV URL.");
+      }
+
+      const text = await response.text();
+      importFromCsvText(text);
+    } catch {
+      setImportError(
+        "Direct URL import failed. StudentVUE often blocks authenticated exports via browser CORS. Download CSV from StudentVUE and upload it below."
+      );
+      setImportStatus("");
+    }
+  }
+
   function removeCourse(courseId) {
     setCourses((previous) => previous.filter((course) => course.id !== courseId));
   }
@@ -105,6 +232,82 @@ export default function GradeTracker({ userId }) {
           </p>
         </div>
       </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="text-xs uppercase tracking-wide text-slate-500">StudentVUE Portal</p>
+          <p className="mt-1 text-xs text-slate-600">
+            Add your StudentVUE link for quick access. Direct sync depends on district permissions.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <input
+              type="url"
+              value={studentVuePortal}
+              onChange={(event) => setStudentVuePortal(event.target.value)}
+              placeholder="https://studentvue.yourschool.org"
+              className="min-w-[220px] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (studentVuePortal.trim()) {
+                  window.open(studentVuePortal.trim(), "_blank", "noopener,noreferrer");
+                }
+              }}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
+            >
+              Open Portal
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="text-xs uppercase tracking-wide text-slate-500">CSV Import</p>
+          <p className="mt-1 text-xs text-slate-600">
+            Upload exported grades CSV from StudentVUE, or import from a direct CSV URL.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={handleCsvFileChange}
+              className="min-w-[220px] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-medium"
+            />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <input
+              type="url"
+              value={csvUrl}
+              onChange={(event) => setCsvUrl(event.target.value)}
+              placeholder="Optional: direct CSV export URL"
+              className="min-w-[220px] flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleCsvUrlImport}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
+            >
+              Import URL
+            </button>
+          </div>
+          {lastImportedAt ? (
+            <p className="mt-2 text-xs text-slate-500">
+              Last import: {new Date(lastImportedAt).toLocaleString()}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      {importStatus ? (
+        <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          {importStatus}
+        </p>
+      ) : null}
+      {importError ? (
+        <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {importError}
+        </p>
+      ) : null}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
