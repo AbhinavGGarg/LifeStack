@@ -10,8 +10,6 @@ const initialForm = {
   password: "",
   name: "",
   grade: "11",
-  interests: "ai, business",
-  goals: "Land a strong internship and build a portfolio.",
 };
 
 export default function LoginPage() {
@@ -39,8 +37,10 @@ export default function LoginPage() {
       const endpoint = isSignup ? "/api/auth/register" : "/api/auth/login";
       const payload = isSignup
         ? {
-            ...form,
-            interests: form.interests,
+            email: form.email,
+            password: form.password,
+            name: form.name,
+            grade: form.grade,
           }
         : {
             email: form.email,
@@ -59,7 +59,11 @@ export default function LoginPage() {
         throw new Error(data?.error || "Authentication failed.");
       }
 
-      router.push("/dashboard");
+      if (isSignup || data?.user?.profile?.onboardingComplete === false) {
+        router.push("/onboarding");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (submitError) {
       setError(submitError.message || "Something went wrong.");
     } finally {
@@ -127,26 +131,6 @@ export default function LoginPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Interests</label>
-                <input
-                  type="text"
-                  value={form.interests}
-                  onChange={(event) => handleChange("interests", event.target.value)}
-                  placeholder="ai, biology, entrepreneurship"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Goals</label>
-                <textarea
-                  value={form.goals}
-                  onChange={(event) => handleChange("goals", event.target.value)}
-                  rows={3}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
-                />
-              </div>
             </>
           ) : null}
 

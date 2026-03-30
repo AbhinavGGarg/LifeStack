@@ -28,6 +28,12 @@ export async function POST(request) {
       grade: String(body?.grade || "").trim().toLowerCase(),
       interests: normalizeInterests(body?.interests),
       goals: String(body?.goals || "").trim(),
+      gpa: null,
+      activityHours: null,
+      extracurriculars: [],
+      intendedMajor: "",
+      targetRole: "",
+      onboardingComplete: false,
     };
 
     if (!email || !password || !profile.name || !profile.grade) {

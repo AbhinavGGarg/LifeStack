@@ -23,6 +23,17 @@ function normalizeOptionalNumber(raw) {
   return Number.isFinite(value) ? value : null;
 }
 
+function normalizeList(raw) {
+  if (Array.isArray(raw)) {
+    return raw.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  return String(raw || "")
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export async function PATCH(request) {
   try {
     const token = (await cookies()).get(authCookieName)?.value;
@@ -37,6 +48,13 @@ export async function PATCH(request) {
     const goals = String(body?.goals || "").trim();
     const gpa = normalizeOptionalNumber(body?.gpa);
     const activityHours = normalizeOptionalNumber(body?.activityHours);
+    const extracurriculars = normalizeList(body?.extracurriculars);
+    const intendedMajor = String(body?.intendedMajor || "").trim();
+    const targetRole = String(body?.targetRole || "").trim();
+    const onboardingComplete =
+      typeof body?.onboardingComplete === "boolean"
+        ? body.onboardingComplete
+        : undefined;
 
     if (interests.length === 0) {
       return NextResponse.json(
@@ -71,6 +89,10 @@ export async function PATCH(request) {
       goals,
       gpa,
       activityHours,
+      extracurriculars,
+      intendedMajor,
+      targetRole,
+      onboardingComplete,
     });
 
     if (!updatedUser) {

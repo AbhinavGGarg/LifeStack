@@ -41,6 +41,10 @@ export function ProductAppProvider({ children }) {
       goals: user.profile.goals,
       gpa: user.profile.gpa,
       activityHours: user.profile.activityHours,
+      extracurriculars: user.profile.extracurriculars,
+      intendedMajor: user.profile.intendedMajor,
+      targetRole: user.profile.targetRole,
+      onboardingComplete: user.profile.onboardingComplete,
     };
   }, [user]);
 
@@ -127,6 +131,10 @@ export function ProductAppProvider({ children }) {
 
         if (active) {
           setUser(data.user);
+
+          if (data?.user?.profile?.onboardingComplete === false) {
+            router.replace("/onboarding");
+          }
         }
       } catch {
         router.replace("/login");
@@ -199,6 +207,9 @@ export function ProductAppProvider({ children }) {
                 user: {
                   interests: studentProfile.interests,
                   goals: studentProfile.goals,
+                  extracurriculars: studentProfile.extracurriculars,
+                  intendedMajor: studentProfile.intendedMajor,
+                  targetRole: studentProfile.targetRole,
                 },
                 opportunity,
               }),
@@ -359,6 +370,10 @@ export function ProductAppProvider({ children }) {
   }
 
   if (!user) {
+    return null;
+  }
+
+  if (user?.profile?.onboardingComplete === false) {
     return null;
   }
 

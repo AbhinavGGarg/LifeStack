@@ -26,6 +26,15 @@ export default function ProfilePage() {
       ? ""
       : String(user.profile.activityHours)
   );
+  const [extracurricularsInput, setExtracurricularsInput] = useState(
+    Array.isArray(user.profile.extracurriculars)
+      ? user.profile.extracurriculars.join(", ")
+      : ""
+  );
+  const [intendedMajorInput, setIntendedMajorInput] = useState(
+    user.profile.intendedMajor || ""
+  );
+  const [targetRoleInput, setTargetRoleInput] = useState(user.profile.targetRole || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -43,11 +52,21 @@ export default function ProfilePage() {
         ? ""
         : String(user.profile.activityHours)
     );
+    setExtracurricularsInput(
+      Array.isArray(user.profile.extracurriculars)
+        ? user.profile.extracurriculars.join(", ")
+        : ""
+    );
+    setIntendedMajorInput(user.profile.intendedMajor || "");
+    setTargetRoleInput(user.profile.targetRole || "");
   }, [
+    user.profile.extracurriculars,
     user.profile.activityHours,
     user.profile.goals,
     user.profile.gpa,
     user.profile.interests,
+    user.profile.intendedMajor,
+    user.profile.targetRole,
   ]);
 
   async function handleSaveProfile() {
@@ -61,6 +80,9 @@ export default function ProfilePage() {
         goals: goalsInput,
         gpa: gpaInput === "" ? null : Number(gpaInput),
         activityHours: activityHoursInput === "" ? null : Number(activityHoursInput),
+        extracurriculars: extracurricularsInput,
+        intendedMajor: intendedMajorInput,
+        targetRole: targetRoleInput,
       });
       setSuccess("Profile updated successfully.");
     } catch (saveError) {
@@ -122,6 +144,39 @@ export default function ProfilePage() {
           <p className="mt-2 text-xs text-slate-500">
             Include clubs, volunteering, competitions, leadership, and project-building hours.
           </p>
+
+          <label className="mt-4 block text-sm font-medium text-slate-800">Extracurriculars</label>
+          <textarea
+            value={extracurricularsInput}
+            onChange={(event) => setExtracurricularsInput(event.target.value)}
+            rows={3}
+            placeholder="Robotics Club, DECA, Hospital volunteer"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
+          />
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="text-sm text-slate-800">
+              <span className="block text-sm font-medium">Intended Major</span>
+              <input
+                type="text"
+                value={intendedMajorInput}
+                onChange={(event) => setIntendedMajorInput(event.target.value)}
+                placeholder="Computer Science"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
+              />
+            </label>
+
+            <label className="text-sm text-slate-800">
+              <span className="block text-sm font-medium">Target Career Direction</span>
+              <input
+                type="text"
+                value={targetRoleInput}
+                onChange={(event) => setTargetRoleInput(event.target.value)}
+                placeholder="ML Engineer, Product Manager"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
+              />
+            </label>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
