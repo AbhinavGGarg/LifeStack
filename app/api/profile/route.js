@@ -14,6 +14,15 @@ function normalizeInterests(raw) {
     .filter(Boolean);
 }
 
+function normalizeOptionalNumber(raw) {
+  if (raw === null || raw === undefined || raw === "") {
+    return null;
+  }
+
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
 export async function PATCH(request) {
   try {
     const token = (await cookies()).get(authCookieName)?.value;
@@ -26,6 +35,8 @@ export async function PATCH(request) {
     const body = await request.json();
     const interests = normalizeInterests(body?.interests);
     const goals = String(body?.goals || "").trim();
+    const gpa = normalizeOptionalNumber(body?.gpa);
+    const activityHours = normalizeOptionalNumber(body?.activityHours);
 
     if (interests.length === 0) {
       return NextResponse.json(
@@ -41,7 +52,26 @@ export async function PATCH(request) {
       );
     }
 
-    const updatedUser = await updateUserProfile(payload.sub, { interests, goals });
+    if (gpa !== null && (gpa < 0 || gpa > 4.0)) {
+      return NextResponse.json(
+        { error: "GPA must be between 0.0 and 4.0." },
+        { status: 400 }
+      );
+    }
+
+    if (activityHours !== null && (activityHours < 0 || activityHours > 80)) {
+      return NextResponse.json(
+        { error: "Activity hours should be between 0 and 80 per week." },
+        { status: 400 }
+      );
+    }
+
+    const updatedUser = await updateUserProfile(payload.sub, {
+      interests,
+      goals,
+      gpa,
+      activityHours,
+    });
 
     if (!updatedUser) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });

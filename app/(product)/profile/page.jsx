@@ -16,6 +16,16 @@ export default function ProfilePage() {
 
   const [interestsInput, setInterestsInput] = useState(user.profile.interests.join(", "));
   const [goalsInput, setGoalsInput] = useState(user.profile.goals);
+  const [gpaInput, setGpaInput] = useState(
+    user.profile.gpa === null || user.profile.gpa === undefined
+      ? ""
+      : String(user.profile.gpa)
+  );
+  const [activityHoursInput, setActivityHoursInput] = useState(
+    user.profile.activityHours === null || user.profile.activityHours === undefined
+      ? ""
+      : String(user.profile.activityHours)
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -23,7 +33,22 @@ export default function ProfilePage() {
   useEffect(() => {
     setInterestsInput(user.profile.interests.join(", "));
     setGoalsInput(user.profile.goals);
-  }, [user.profile.goals, user.profile.interests]);
+    setGpaInput(
+      user.profile.gpa === null || user.profile.gpa === undefined
+        ? ""
+        : String(user.profile.gpa)
+    );
+    setActivityHoursInput(
+      user.profile.activityHours === null || user.profile.activityHours === undefined
+        ? ""
+        : String(user.profile.activityHours)
+    );
+  }, [
+    user.profile.activityHours,
+    user.profile.goals,
+    user.profile.gpa,
+    user.profile.interests,
+  ]);
 
   async function handleSaveProfile() {
     setSaving(true);
@@ -34,6 +59,8 @@ export default function ProfilePage() {
       await updateProfile({
         interests: interestsInput,
         goals: goalsInput,
+        gpa: gpaInput === "" ? null : Number(gpaInput),
+        activityHours: activityHoursInput === "" ? null : Number(activityHoursInput),
       });
       setSuccess("Profile updated successfully.");
     } catch (saveError) {
@@ -64,6 +91,34 @@ export default function ProfilePage() {
             onChange={(event) => setInterestsInput(event.target.value)}
             className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
           />
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="text-sm text-slate-200">
+              <span className="block text-sm font-medium">GPA (0.0 - 4.0)</span>
+              <input
+                type="number"
+                min="0"
+                max="4"
+                step="0.01"
+                value={gpaInput}
+                onChange={(event) => setGpaInput(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+              />
+            </label>
+
+            <label className="text-sm text-slate-200">
+              <span className="block text-sm font-medium">Activity Hours / Week</span>
+              <input
+                type="number"
+                min="0"
+                max="80"
+                step="1"
+                value={activityHoursInput}
+                onChange={(event) => setActivityHoursInput(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+              />
+            </label>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-slate-900/65 p-5">

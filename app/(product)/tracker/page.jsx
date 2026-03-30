@@ -45,7 +45,7 @@ export default function TrackerPage() {
                     <p className="text-xs text-slate-400">Deadline: {formatDate(item.opportunity.deadline)}</p>
                   </div>
                   <a
-                    href={item.opportunity.link}
+                    href={`/api/opportunities/open?id=${encodeURIComponent(item.opportunity.id)}`}
                     target="_blank"
                     rel="noreferrer"
                     className="rounded-lg border border-white/15 px-2 py-1 text-[11px] text-slate-200 transition hover:border-cyan-300/40 hover:bg-cyan-300/10"

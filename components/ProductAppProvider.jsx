@@ -39,6 +39,8 @@ export function ProductAppProvider({ children }) {
       grade: user.profile.grade,
       interests: user.profile.interests,
       goals: user.profile.goals,
+      gpa: user.profile.gpa,
+      activityHours: user.profile.activityHours,
     };
   }, [user]);
 
