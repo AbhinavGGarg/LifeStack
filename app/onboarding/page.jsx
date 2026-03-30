@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import MajorQuiz from "@/components/MajorQuiz";
-import { MAJOR_OPTIONS, getMajorLabel } from "@/lib/majorGuidance";
+import {
+  MAJOR_SEARCH_OPTIONS,
+  formatMajorInputValue,
+  getMajorLabel,
+  isUndecidedMajor,
+} from "@/lib/majorGuidance";
 
 const initialForm = {
   gpa: "",
@@ -13,6 +18,7 @@ const initialForm = {
   majorRecommendation: "",
   targetRole: "",
 };
+const MAJOR_DATALIST_ID = "major-options-onboarding";
 
 function toCsv(value) {
   if (!Array.isArray(value)) {
@@ -77,7 +83,7 @@ export default function OnboardingPage() {
               ? ""
               : String(nextUser.profile.activityHours),
           extracurriculars: toCsv(nextUser.profile.extracurriculars),
-          intendedMajor: nextUser.profile.intendedMajor || "",
+          intendedMajor: formatMajorInputValue(nextUser.profile.intendedMajor),
           majorRecommendation: nextUser.profile.majorRecommendation || "",
           targetRole: nextUser.profile.targetRole || "",
         });
@@ -105,7 +111,7 @@ export default function OnboardingPage() {
     setForm((previous) => ({
       ...previous,
       intendedMajor: value,
-      majorRecommendation: value === "undecided" ? previous.majorRecommendation : "",
+      majorRecommendation: isUndecidedMajor(value) ? previous.majorRecommendation : "",
     }));
   }
 
@@ -119,7 +125,7 @@ export default function OnboardingPage() {
         throw new Error("Select your intended major.");
       }
 
-      if (form.intendedMajor === "undecided" && !form.majorRecommendation) {
+      if (isUndecidedMajor(form.intendedMajor) && !form.majorRecommendation) {
         throw new Error("Take the major quiz to get a recommendation, or choose a major.");
       }
 
@@ -132,7 +138,7 @@ export default function OnboardingPage() {
           extracurriculars: form.extracurriculars,
           intendedMajor: form.intendedMajor,
           majorRecommendation:
-            form.intendedMajor === "undecided" ? form.majorRecommendation : "",
+            isUndecidedMajor(form.intendedMajor) ? form.majorRecommendation : "",
           targetRole: form.targetRole,
           onboardingComplete: true,
         }),
@@ -267,22 +273,26 @@ export default function OnboardingPage() {
 
             <label className="block text-sm text-slate-700">
               <span className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Intended Major</span>
-              <select
+              <input
                 required
+                type="text"
+                list={MAJOR_DATALIST_ID}
                 value={form.intendedMajor}
                 onChange={(event) => handleMajorChange(event.target.value)}
+                placeholder="Type to search majors (e.g. Aerospace Engineering)"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
-              >
-                <option value="">Select your intended major</option>
-                {MAJOR_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
+              />
+              <datalist id={MAJOR_DATALIST_ID}>
+                {MAJOR_SEARCH_OPTIONS.map((majorLabel) => (
+                  <option key={majorLabel} value={majorLabel} />
                 ))}
-              </select>
+              </datalist>
+              <p className="mt-1 text-xs text-slate-500">
+                You can type any major. LifeStack will map it to the closest path automatically.
+              </p>
             </label>
 
-            {form.intendedMajor === "undecided" ? (
+            {isUndecidedMajor(form.intendedMajor) ? (
               <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <p className="text-xs text-slate-600">
                   Not sure yet is normal. Take this quiz to get your most likely-fit major direction.

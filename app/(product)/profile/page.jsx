@@ -5,11 +5,14 @@ import { useRouter } from "next/navigation";
 import MajorQuiz from "@/components/MajorQuiz";
 import { useProductApp } from "@/components/ProductAppProvider";
 import {
-  MAJOR_OPTIONS,
+  MAJOR_SEARCH_OPTIONS,
+  formatMajorInputValue,
   getMajorLabel,
   getMajorTrack,
+  isUndecidedMajor,
   resolveMajor,
 } from "@/lib/majorGuidance";
+const MAJOR_DATALIST_ID = "major-options-profile";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -48,7 +51,7 @@ export default function ProfilePage() {
       : ""
   );
   const [intendedMajorInput, setIntendedMajorInput] = useState(
-    user.profile.intendedMajor || ""
+    formatMajorInputValue(user.profile.intendedMajor)
   );
   const [majorRecommendationInput, setMajorRecommendationInput] = useState(
     user.profile.majorRecommendation || ""
@@ -79,7 +82,7 @@ export default function ProfilePage() {
         ? user.profile.extracurriculars.join(", ")
         : ""
     );
-    setIntendedMajorInput(user.profile.intendedMajor || "");
+    setIntendedMajorInput(formatMajorInputValue(user.profile.intendedMajor));
     setMajorRecommendationInput(user.profile.majorRecommendation || "");
     setTargetRoleInput(user.profile.targetRole || "");
   }, [
@@ -117,7 +120,7 @@ export default function ProfilePage() {
         extracurriculars: extracurricularsInput,
         intendedMajor: intendedMajorInput,
         majorRecommendation:
-          intendedMajorInput === "undecided" ? majorRecommendationInput : "",
+          isUndecidedMajor(intendedMajorInput) ? majorRecommendationInput : "",
         targetRole: targetRoleInput,
       });
       setSuccess("Profile updated successfully.");
@@ -238,24 +241,28 @@ export default function ProfilePage() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="text-sm text-slate-800">
               <span className="block text-sm font-medium">Intended Major</span>
-              <select
+              <input
+                type="text"
+                list={MAJOR_DATALIST_ID}
                 value={intendedMajorInput}
                 onChange={(event) => {
                   const nextValue = event.target.value;
                   setIntendedMajorInput(nextValue);
-                  if (nextValue !== "undecided") {
+                  if (!isUndecidedMajor(nextValue)) {
                     setMajorRecommendationInput("");
                   }
                 }}
+                placeholder="Type to search majors (e.g. Public Policy)"
                 className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
-              >
-                <option value="">Select major</option>
-                {MAJOR_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
+              />
+              <datalist id={MAJOR_DATALIST_ID}>
+                {MAJOR_SEARCH_OPTIONS.map((majorLabel) => (
+                  <option key={majorLabel} value={majorLabel} />
                 ))}
-              </select>
+              </datalist>
+              <p className="mt-1 text-xs text-slate-500">
+                Search from many majors or type your own.
+              </p>
             </label>
 
             <label className="text-sm text-slate-800">
@@ -270,7 +277,7 @@ export default function ProfilePage() {
             </label>
           </div>
 
-          {intendedMajorInput === "undecided" ? (
+          {isUndecidedMajor(intendedMajorInput) ? (
             <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs uppercase tracking-wide text-slate-500">Undecided Support</p>
               <p className="text-xs text-slate-600">

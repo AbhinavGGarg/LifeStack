@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import LineTrendChart from "@/components/LineTrendChart";
 import { useProductApp } from "@/components/ProductAppProvider";
+import { isUndecidedMajor } from "@/lib/majorGuidance";
 
 function ProgressBar({ value, tone = "sky" }) {
   const tones = {
@@ -124,7 +125,7 @@ export default function TrajectoryPage() {
     if (savedStatusCounts.applied < 2) {
       actions.push("Push pipeline action: move two opportunities from saved to applying.");
     }
-    if (studentProfile?.intendedMajor === "undecided" && !studentProfile?.majorRecommendation) {
+    if (isUndecidedMajor(studentProfile?.intendedMajor) && !studentProfile?.majorRecommendation) {
       actions.push("Take the major quiz in Profile so Trajectory can optimize recommendations.");
     }
     if (actions.length === 0) {

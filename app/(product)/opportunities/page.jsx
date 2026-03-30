@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import OpportunityCard from "@/components/OpportunityCard";
 import { useProductApp } from "@/components/ProductAppProvider";
+import { isUndecidedMajor } from "@/lib/majorGuidance";
 
 function daysUntil(deadline) {
   const parsed = new Date(deadline);
@@ -222,7 +223,8 @@ export default function OpportunitiesPage() {
             </span>
           ))}
         </div>
-        {studentProfile?.intendedMajor === "undecided" && !studentProfile?.majorRecommendation ? (
+        {isUndecidedMajor(studentProfile?.intendedMajor) &&
+        !studentProfile?.majorRecommendation ? (
           <p className="mt-3 text-xs text-indigo-800">
             You&apos;re undecided right now. Take the major quiz in Profile to improve recommendation quality.
           </p>

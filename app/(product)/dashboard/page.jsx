@@ -3,6 +3,7 @@
 import GoalPlanner from "@/components/GoalPlanner";
 import TaskList from "@/components/TaskList";
 import { useProductApp } from "@/components/ProductAppProvider";
+import { isUndecidedMajor } from "@/lib/majorGuidance";
 
 function StatCard({ label, value, hint }) {
   return (
@@ -183,7 +184,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {studentProfile?.intendedMajor === "undecided" && !studentProfile?.majorRecommendation ? (
+        {isUndecidedMajor(studentProfile?.intendedMajor) &&
+        !studentProfile?.majorRecommendation ? (
           <p className="mt-3 text-xs text-amber-700">
             You&apos;re currently undecided. Take the major quiz in Profile to unlock sharper recommendations.
           </p>
