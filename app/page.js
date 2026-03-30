@@ -62,12 +62,6 @@ export default function HomePage() {
             >
               Log In
             </Link>
-            <Link
-              href="/dashboard"
-              className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-center text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
-            >
-              Continue to Dashboard
-            </Link>
           </div>
         </aside>
       </div>
