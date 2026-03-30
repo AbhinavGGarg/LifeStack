@@ -166,11 +166,6 @@ export default function ProfilePage() {
         localStorage.removeItem(`lifestack:${user.id}:goalPlans`);
         localStorage.removeItem(`lifestack:${user.id}:reflections`);
         localStorage.removeItem(`lifestack:${user.id}:preferences`);
-        localStorage.removeItem(`lifestack:${user.id}:courses`);
-        localStorage.removeItem(`lifestack:${user.id}:studentvuePortal`);
-        localStorage.removeItem(`lifestack:${user.id}:studentvueUsername`);
-        localStorage.removeItem(`lifestack:${user.id}:gradeImportMeta`);
-        localStorage.removeItem(`lifestack:${user.id}:gradeCsvUrl`);
       }
 
       router.replace("/login");

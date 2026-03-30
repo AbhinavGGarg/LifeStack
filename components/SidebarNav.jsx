@@ -9,7 +9,6 @@ const navItems = [
   { label: "Trajectory", href: "/trajectory" },
   { label: "Opportunities", href: "/opportunities" },
   { label: "Tracker", href: "/tracker" },
-  { label: "Grades", href: "/grades" },
   { label: "Profile", href: "/profile" },
 ];
 
