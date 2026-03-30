@@ -25,17 +25,20 @@ export default function SidebarNav() {
   const { user, logout, loggingOut } = useProductApp();
 
   return (
-    <aside className="w-full border-b border-white/10 bg-slate-950/80 px-4 py-4 backdrop-blur-xl md:sticky md:top-0 md:h-screen md:w-72 md:border-b-0 md:border-r">
-      <div className="flex h-full flex-col">
-        <div className="mb-6">
-          <p className="text-xs uppercase tracking-[0.25em] text-cyan-300/70">LifeStack</p>
-          <h1 className="mt-1 text-lg font-semibold text-white">Student OS</h1>
-          <p className="mt-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300">
+    <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 px-4 py-4 backdrop-blur-xl md:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] text-sky-600/80">LifeStack</p>
+            <h1 className="mt-1 text-lg font-semibold text-slate-900">Student OS</h1>
+          </div>
+          <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
             {user.profile.name} • {user.profile.grade}
           </p>
         </div>
 
-        <nav className="grid grid-cols-2 gap-2 md:grid-cols-1">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <nav className="flex flex-wrap gap-2">
           {navItems.map((item) => {
             const active = isActive(pathname, item.href);
 
@@ -45,25 +48,26 @@ export default function SidebarNav() {
                 href={item.href}
                 className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
                   active
-                    ? "border border-cyan-300/40 bg-cyan-300/15 text-cyan-100"
-                    : "border border-transparent text-slate-300 hover:border-white/10 hover:bg-white/5 hover:text-white"
+                    ? "border border-sky-300 bg-sky-50 text-sky-800"
+                    : "border border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
                 {item.label}
               </Link>
             );
           })}
-        </nav>
+          </nav>
 
-        <button
-          type="button"
-          onClick={logout}
-          disabled={loggingOut}
-          className="mt-6 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition hover:border-rose-300/35 hover:bg-rose-300/10 hover:text-rose-100 disabled:cursor-not-allowed disabled:opacity-65 md:mt-auto"
-        >
-          {loggingOut ? "Signing out..." : "Sign out"}
-        </button>
+          <button
+            type="button"
+            onClick={logout}
+            disabled={loggingOut}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-65"
+          >
+            {loggingOut ? "Signing out..." : "Sign out"}
+          </button>
+        </div>
       </div>
-    </aside>
+    </header>
   );
 }

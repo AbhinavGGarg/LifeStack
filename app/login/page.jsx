@@ -68,56 +68,56 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.22),transparent_40%),radial-gradient(circle_at_90%_90%,rgba(45,212,191,0.2),transparent_35%),#020617] px-4 py-10">
-      <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900/80 p-7 shadow-[0_40px_120px_-50px_rgba(34,211,238,0.7)] backdrop-blur-xl">
-        <p className="mb-1 text-xs uppercase tracking-[0.22em] text-cyan-300/70">LifeStack</p>
-        <h1 className="mb-6 text-2xl font-semibold text-white">{title}</h1>
+    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.18),transparent_40%),radial-gradient(circle_at_90%_90%,rgba(20,184,166,0.14),transparent_35%),#f4f7fb] px-4 py-10">
+      <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-7 shadow-[0_45px_100px_-55px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+        <p className="mb-1 text-xs uppercase tracking-[0.22em] text-sky-600/80">LifeStack</p>
+        <h1 className="mb-6 text-2xl font-semibold text-slate-900">{title}</h1>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           {isSignup ? (
             <div>
-              <label className="mb-1 block text-xs uppercase tracking-wide text-slate-400">Name</label>
+              <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Name</label>
               <input
                 required
                 type="text"
                 value={form.name}
                 onChange={(event) => handleChange("name", event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
               />
             </div>
           ) : null}
 
           <div>
-            <label className="mb-1 block text-xs uppercase tracking-wide text-slate-400">Email</label>
+            <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Email</label>
             <input
               required
               type="email"
               value={form.email}
               onChange={(event) => handleChange("email", event.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs uppercase tracking-wide text-slate-400">Password</label>
+            <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Password</label>
             <input
               required
               minLength={8}
               type="password"
               value={form.password}
               onChange={(event) => handleChange("password", event.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
             />
           </div>
 
           {isSignup ? (
             <>
               <div>
-                <label className="mb-1 block text-xs uppercase tracking-wide text-slate-400">Grade</label>
+                <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Grade</label>
                 <select
                   value={form.grade}
                   onChange={(event) => handleChange("grade", event.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
                 >
                   {gradeOptions.map((grade) => (
                     <option key={grade} value={grade}>
@@ -128,34 +128,38 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs uppercase tracking-wide text-slate-400">Interests</label>
+                <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Interests</label>
                 <input
                   type="text"
                   value={form.interests}
                   onChange={(event) => handleChange("interests", event.target.value)}
                   placeholder="ai, biology, entrepreneurship"
-                  className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs uppercase tracking-wide text-slate-400">Goals</label>
+                <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Goals</label>
                 <textarea
                   value={form.goals}
                   onChange={(event) => handleChange("goals", event.target.value)}
                   rows={3}
-                  className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
                 />
               </div>
             </>
           ) : null}
 
-          {error ? <p className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-200">{error}</p> : null}
+          {error ? (
+            <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {error}
+            </p>
+          ) : null}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? "Please wait..." : isSignup ? "Create account" : "Login"}
           </button>
@@ -167,7 +171,7 @@ export default function LoginPage() {
             setIsSignup((prev) => !prev);
             setError("");
           }}
-          className="mt-4 text-sm text-cyan-200 transition hover:text-cyan-100"
+          className="mt-4 text-sm text-sky-700 transition hover:text-sky-800"
         >
           {isSignup ? "Already have an account? Login" : "New user? Create an account"}
         </button>

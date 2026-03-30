@@ -72,28 +72,28 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
-      <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/75">Profile</p>
-        <h2 className="mt-2 text-2xl font-semibold text-white">{user.profile.name}</h2>
-        <p className="mt-1 text-sm text-slate-300">{user.email}</p>
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+        <p className="text-xs uppercase tracking-[0.2em] text-sky-600/80">Profile</p>
+        <h2 className="mt-2 text-2xl font-semibold text-slate-900">{user.profile.name}</h2>
+        <p className="mt-1 text-sm text-slate-600">{user.email}</p>
       </section>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <section className="rounded-2xl border border-white/10 bg-slate-900/65 p-5">
-          <h3 className="text-lg font-semibold text-white">Student Context</h3>
-          <p className="mt-3 text-sm text-slate-300">Grade: {user.profile.grade}</p>
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+          <h3 className="text-lg font-semibold text-slate-900">Student Context</h3>
+          <p className="mt-3 text-sm text-slate-600">Grade: {user.profile.grade}</p>
 
-          <label className="mt-4 block text-sm font-medium text-slate-200">Interests</label>
-          <p className="mt-1 text-xs text-slate-400">Comma-separated, like: ai, biology, business</p>
+          <label className="mt-4 block text-sm font-medium text-slate-800">Interests</label>
+          <p className="mt-1 text-xs text-slate-500">Comma-separated, like: ai, biology, business</p>
           <input
             type="text"
             value={interestsInput}
             onChange={(event) => setInterestsInput(event.target.value)}
-            className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
           />
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="text-sm text-slate-200">
+            <label className="text-sm text-slate-800">
               <span className="block text-sm font-medium">GPA (0.0 - 4.0)</span>
               <input
                 type="number"
@@ -102,12 +102,12 @@ export default function ProfilePage() {
                 step="0.01"
                 value={gpaInput}
                 onChange={(event) => setGpaInput(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
               />
             </label>
 
-            <label className="text-sm text-slate-200">
-              <span className="block text-sm font-medium">Activity Hours / Week</span>
+            <label className="text-sm text-slate-800">
+              <span className="block text-sm font-medium">Extracurricular Hours / Week</span>
               <input
                 type="number"
                 min="0"
@@ -115,15 +115,18 @@ export default function ProfilePage() {
                 step="1"
                 value={activityHoursInput}
                 onChange={(event) => setActivityHoursInput(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
               />
             </label>
           </div>
+          <p className="mt-2 text-xs text-slate-500">
+            Include clubs, volunteering, competitions, leadership, and project-building hours.
+          </p>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-slate-900/65 p-5">
-          <h3 className="text-lg font-semibold text-white">Current Stats</h3>
-          <div className="mt-3 space-y-2 text-sm text-slate-300">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+          <h3 className="text-lg font-semibold text-slate-900">Current Stats</h3>
+          <div className="mt-3 space-y-2 text-sm text-slate-600">
             <p>Total Tasks: {tasks.length}</p>
             <p>Completed Tasks: {completedTaskCount}</p>
             <p>Saved Opportunities: {savedItems.length}</p>
@@ -132,27 +135,27 @@ export default function ProfilePage() {
             type="button"
             onClick={logout}
             disabled={loggingOut}
-            className="mt-5 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:border-rose-300/35 hover:bg-rose-300/10 hover:text-rose-100 disabled:cursor-not-allowed disabled:opacity-65"
+            className="mt-5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-65"
           >
             {loggingOut ? "Signing out..." : "Sign out"}
           </button>
         </section>
       </div>
 
-      <section className="rounded-2xl border border-white/10 bg-slate-900/65 p-5">
-        <h3 className="text-lg font-semibold text-white">Goals</h3>
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+        <h3 className="text-lg font-semibold text-slate-900">Goals</h3>
         <textarea
           value={goalsInput}
           onChange={(event) => setGoalsInput(event.target.value)}
           rows={4}
-          className="mt-3 w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+          className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
         />
 
         {error ? (
-          <p className="mt-3 rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-200">{error}</p>
+          <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
         ) : null}
         {success ? (
-          <p className="mt-3 rounded-xl bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+          <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
             {success}
           </p>
         ) : null}
@@ -161,7 +164,7 @@ export default function ProfilePage() {
           type="button"
           onClick={handleSaveProfile}
           disabled={saving}
-          className="mt-4 rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-70"
+          className="mt-4 rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {saving ? "Saving..." : "Save Profile"}
         </button>

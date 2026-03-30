@@ -352,7 +352,7 @@ export function ProductAppProvider({ children }) {
 
   if (loadingUser) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-200">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600">
         <p className="animate-pulse text-sm tracking-wide">Loading your LifeStack...</p>
       </main>
     );

@@ -5,14 +5,14 @@ import { useProductApp } from "@/components/ProductAppProvider";
 
 function ProgressBar({ value, tone = "cyan" }) {
   const classes = {
-    cyan: "bg-cyan-300",
-    teal: "bg-teal-300",
-    emerald: "bg-emerald-300",
-    amber: "bg-amber-300",
+    cyan: "bg-sky-400",
+    teal: "bg-teal-400",
+    emerald: "bg-emerald-400",
+    amber: "bg-amber-400",
   };
 
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
       <div
         className={`h-full rounded-full transition-all duration-300 ${classes[tone] || classes.cyan}`}
         style={{ width: `${Math.max(0, Math.min(value, 100))}%` }}
@@ -95,26 +95,26 @@ export default function TrajectoryPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
-      <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/75">Trajectory</p>
-        <h2 className="mt-2 text-2xl font-semibold text-white">Trajectory Model</h2>
-        <p className="mt-1 text-sm text-slate-300">
-          Inputs used: task completion, saved pipeline status, GPA, and weekly extracurricular hours.
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+        <p className="text-xs uppercase tracking-[0.2em] text-sky-600/80">Trajectory</p>
+        <h2 className="mt-2 text-2xl font-semibold text-slate-900">Trajectory Model</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Inputs used: task completion, saved pipeline status, GPA, and extracurricular hours per week.
         </p>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-white/10 bg-slate-900/65 p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-teal-300/75">Your Current Path</p>
-          <h3 className="mt-2 text-xl font-semibold text-white">{trajectory.currentPathMessage}</h3>
-          <p className="mt-2 text-sm text-slate-300">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+          <p className="text-xs uppercase tracking-[0.2em] text-teal-600/80">Your Current Path</p>
+          <h3 className="mt-2 text-xl font-semibold text-slate-900">{trajectory.currentPathMessage}</h3>
+          <p className="mt-2 text-sm text-slate-600">
             {savedItems.length} saved opportunities, {completedTaskCount} completed tasks, confidence:{" "}
             {trajectory.confidence}.
           </p>
 
           <div className="mt-6 space-y-4">
             <div>
-              <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
+              <div className="mb-2 flex items-center justify-between text-xs text-slate-600">
                 <span>Task Execution</span>
                 <span>{trajectory.taskCompletionRate}%</span>
               </div>
@@ -122,7 +122,7 @@ export default function TrajectoryPage() {
             </div>
 
             <div>
-              <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
+              <div className="mb-2 flex items-center justify-between text-xs text-slate-600">
                 <span>Opportunity Pipeline</span>
                 <span>{trajectory.opportunityPipelineScore}%</span>
               </div>
@@ -130,7 +130,7 @@ export default function TrajectoryPage() {
             </div>
 
             <div>
-              <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
+              <div className="mb-2 flex items-center justify-between text-xs text-slate-600">
                 <span>Academic Signal (GPA)</span>
                 <span>{trajectory.hasGpa ? `${trajectory.gpaScore}%` : "Missing input"}</span>
               </div>
@@ -138,8 +138,8 @@ export default function TrajectoryPage() {
             </div>
 
             <div>
-              <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
-                <span>Extracurricular Depth</span>
+              <div className="mb-2 flex items-center justify-between text-xs text-slate-600">
+                <span>Extracurricular Depth (hours/week)</span>
                 <span>{trajectory.hasActivityHours ? `${trajectory.activityScore}%` : "Missing input"}</span>
               </div>
               <ProgressBar value={trajectory.activityScore} tone="amber" />
@@ -147,19 +147,21 @@ export default function TrajectoryPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-slate-900/65 p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-300/80">Projected Outcome</p>
-          <h3 className="mt-2 text-xl font-semibold text-white">Trajectory Score: {trajectory.momentumScore}/100</h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-300">{trajectory.projectedOutcome}</p>
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+          <p className="text-xs uppercase tracking-[0.2em] text-emerald-600/80">Projected Outcome</p>
+          <h3 className="mt-2 text-xl font-semibold text-slate-900">
+            Trajectory Score: {trajectory.momentumScore}/100
+          </h3>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">{trajectory.projectedOutcome}</p>
 
           {trajectory.confidence === "Low" ? (
-            <p className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-sm text-amber-100">
+            <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
               Add GPA and weekly activity hours in your Profile tab for more reliable projections.
             </p>
           ) : null}
 
           <div className="mt-6">
-            <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
+            <div className="mb-2 flex items-center justify-between text-xs text-slate-600">
               <span>Overall Strength</span>
               <span>{trajectory.momentumScore}%</span>
             </div>
@@ -167,13 +169,13 @@ export default function TrajectoryPage() {
           </div>
 
           <div className="mt-6 grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-slate-300">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-slate-600">
               Saved: {savedStatusCounts.saved}
             </div>
-            <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-slate-300">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-slate-600">
               Applying: {savedStatusCounts.applying}
             </div>
-            <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-slate-300">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-slate-600">
               Applied: {savedStatusCounts.applied}
             </div>
           </div>

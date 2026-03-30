@@ -50,20 +50,20 @@ export default function OpportunitiesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
-      <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/75">Opportunities</p>
-        <h2 className="mt-2 text-2xl font-semibold text-white">Discover and Prioritize</h2>
-        <p className="mt-1 text-sm text-slate-300">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+        <p className="text-xs uppercase tracking-[0.2em] text-sky-600/80">Opportunities</p>
+        <h2 className="mt-2 text-2xl font-semibold text-slate-900">Discover and Prioritize</h2>
+        <p className="mt-1 text-sm text-slate-600">
           Matches are ranked by your interests and deadline urgency.
         </p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <label className="text-sm text-slate-300">
-            <span className="mb-2 block text-xs uppercase tracking-wide text-slate-400">Type</span>
+          <label className="text-sm text-slate-700">
+            <span className="mb-2 block text-xs uppercase tracking-wide text-slate-500">Type</span>
             <select
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
             >
               {categories.map((category) => (
                 <option key={category} value={category}>
@@ -73,12 +73,12 @@ export default function OpportunitiesPage() {
             </select>
           </label>
 
-          <label className="text-sm text-slate-300">
-            <span className="mb-2 block text-xs uppercase tracking-wide text-slate-400">Deadline</span>
+          <label className="text-sm text-slate-700">
+            <span className="mb-2 block text-xs uppercase tracking-wide text-slate-500">Deadline</span>
             <select
               value={deadlineFilter}
               onChange={(event) => setDeadlineFilter(event.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-cyan-300/40 focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-sky-300 focus:outline-none"
             >
               <option value="all">all</option>
               <option value="30">next 30 days</option>
@@ -89,10 +89,10 @@ export default function OpportunitiesPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white">Matched Opportunities</h3>
-          <p className="text-xs text-slate-400">{filtered.length} results</p>
+          <h3 className="text-lg font-semibold text-slate-900">Matched Opportunities</h3>
+          <p className="text-xs text-slate-500">{filtered.length} results</p>
         </div>
 
         <div className="grid gap-4 xl:grid-cols-2">
