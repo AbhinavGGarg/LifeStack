@@ -86,24 +86,36 @@ export default function TrajectoryPage() {
         savedStatusCounts.applied * 35
     );
 
-    const gpaScore =
-      typeof studentProfile?.gpa === "number" && Number.isFinite(studentProfile.gpa)
-        ? Math.round((studentProfile.gpa / 4) * 100)
-        : 0;
+    const completedMilestones = goalProgress.reduce((sum, goal) => sum + goal.done, 0);
+    const realProgressPoints =
+      completedTaskCount +
+      Math.round(focusMinutesWeek / 45) +
+      savedStatusCounts.applying * 2 +
+      savedStatusCounts.applied * 3 +
+      completedMilestones * 2;
 
     const trajectoryScore = Math.round(
-      executionScore * 0.45 + averageGoalProgress * 0.2 + pipelineStrength * 0.2 + gpaScore * 0.15
+      executionScore * 0.5 + averageGoalProgress * 0.25 + pipelineStrength * 0.25
     );
 
-    let status = "On Track";
-    if (trajectoryScore < 45) {
-      status = "At Risk";
-    } else if (trajectoryScore < 70) {
-      status = "Behind";
+    const dataConfidence =
+      realProgressPoints >= 8 ? "High" : realProgressPoints >= 3 ? "Medium" : "Low";
+
+    let status = "Not Enough Data";
+    if (realProgressPoints > 0) {
+      status = "On Track";
+      if (trajectoryScore < 40) {
+        status = "At Risk";
+      } else if (trajectoryScore < 68) {
+        status = "Behind";
+      }
     }
 
-    let projection =
-      "If you continue at this pace, your profile will strengthen steadily over the next 4-8 weeks.";
+    let projection = "Not enough real activity is logged yet to make a confident long-term projection.";
+    if (status === "On Track") {
+      projection =
+        "If you continue at this pace, your profile will strengthen steadily over the next 4-8 weeks.";
+    }
     if (status === "Behind") {
       projection =
         "If you continue at this pace, you may underperform on major goals unless weekly execution improves.";
@@ -114,6 +126,11 @@ export default function TrajectoryPage() {
     }
 
     const actions = [];
+    if (realProgressPoints === 0) {
+      actions.push("Complete your first task today to establish a real progress baseline.");
+      actions.push("Run one 25-minute focus session so Trajectory can track execution.");
+      actions.push("Save one opportunity and move it to applying when you start.");
+    }
     if (streakDays < 3) {
       actions.push("Rebuild consistency: complete at least one priority task daily for 7 days.");
     }
@@ -138,7 +155,8 @@ export default function TrajectoryPage() {
       goalProgress,
       averageGoalProgress,
       pipelineStrength,
-      gpaScore,
+      realProgressPoints,
+      dataConfidence,
       trajectoryScore,
       status,
       projection,
@@ -146,6 +164,7 @@ export default function TrajectoryPage() {
     };
   }, [
     activityTimeline,
+    completedTaskCount,
     executionScore,
     focusMinutesWeek,
     goalPlans,
@@ -155,7 +174,9 @@ export default function TrajectoryPage() {
   ]);
 
   const statusTone =
-    trajectory.status === "On Track"
+    trajectory.status === "Not Enough Data"
+      ? "text-slate-700 bg-slate-100 border-slate-200"
+      : trajectory.status === "On Track"
       ? "text-emerald-700 bg-emerald-50 border-emerald-200"
       : trajectory.status === "Behind"
         ? "text-amber-700 bg-amber-50 border-amber-200"
@@ -183,6 +204,9 @@ export default function TrajectoryPage() {
           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Trajectory Score</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{trajectory.trajectoryScore}/100</p>
           <p className="mt-2 text-sm text-slate-600">{trajectory.projection}</p>
+          <p className="mt-2 text-xs text-slate-500">
+            Based on {trajectory.realProgressPoints} real progress events (tasks, focus sessions, milestones, pipeline actions).
+          </p>
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
@@ -219,6 +243,7 @@ export default function TrajectoryPage() {
             <p>Completed tasks: {completedTaskCount}</p>
             <p>Focus minutes this week: {focusMinutesWeek}</p>
             <p>Consistency delta: {consistencyDelta >= 0 ? "+" : ""}{consistencyDelta}% vs last week</p>
+            <p>Data confidence: {trajectory.dataConfidence}</p>
           </div>
         </section>
       </div>
