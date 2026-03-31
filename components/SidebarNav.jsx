@@ -6,15 +6,16 @@ import { useProductApp } from "@/components/ProductAppProvider";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard" },
+  { label: "Focus", href: "/dashboard#focus-mode" },
   { label: "Trajectory", href: "/trajectory" },
   { label: "Opportunities", href: "/opportunities" },
   { label: "Tracker", href: "/tracker" },
-  { label: "Aria", href: "/aria", newTab: true },
+  { label: "Nova", href: "/nova", newTab: true },
   { label: "Profile", href: "/profile" },
 ];
 
 function isActive(pathname, href) {
-  if (href === "/dashboard") {
+  if (href === "/dashboard" || href.startsWith("/dashboard#")) {
     return pathname === "/dashboard";
   }
 

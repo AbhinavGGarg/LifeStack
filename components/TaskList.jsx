@@ -667,7 +667,7 @@ export default function TaskList({
         ) : null}
       </form>
 
-      <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <div id="focus-mode" className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-3 scroll-mt-24">
         <p className="text-xs uppercase tracking-wide text-sky-600/80">Focus Mode</p>
         <p className="mt-1 text-sm text-slate-700">
           Lock in with a guided timer, live attention signals, and session tracking.
