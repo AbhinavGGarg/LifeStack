@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const PRIORITY_OPTIONS = ["high", "medium", "low"];
 const CATEGORY_OPTIONS = [
@@ -69,6 +69,17 @@ function formatTimer(seconds) {
   return `${mins}:${secs}`;
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getQualityLabel(score) {
+  if (score >= 80) return "Locked In";
+  if (score >= 62) return "Solid Focus";
+  if (score >= 45) return "Mixed Focus";
+  return "Distracted";
+}
+
 export default function TaskList({
   tasks = [],
   goalPlans = [],
@@ -89,6 +100,40 @@ export default function TaskList({
   const [focusDuration, setFocusDuration] = useState(25);
   const [secondsRemaining, setSecondsRemaining] = useState(25 * 60);
   const [focusRunning, setFocusRunning] = useState(false);
+  const [focusIntelEnabled, setFocusIntelEnabled] = useState(true);
+  const [intelLive, setIntelLive] = useState({
+    cameraPermission: "idle",
+    cameraSupported: false,
+    cameraUsed: false,
+    sampleCount: 0,
+    attentiveSampleCount: 0,
+    tabAwayEvents: 0,
+    windowBlurEvents: 0,
+    idleEvents: 0,
+    interactionEvents: 0,
+    attentionState: "not-started",
+  });
+
+  const trackingRef = useRef({
+    stream: null,
+    detector: null,
+    video: null,
+    listenersAttached: false,
+    sampleIntervalId: null,
+    idleIntervalId: null,
+    attentionState: "not-started",
+    idleActive: false,
+    lastInteractionAt: 0,
+    sampleCount: 0,
+    attentiveSampleCount: 0,
+    tabAwayEvents: 0,
+    windowBlurEvents: 0,
+    idleEvents: 0,
+    interactionEvents: 0,
+    cameraSupported: false,
+    cameraPermission: "idle",
+    cameraUsed: false,
+  });
 
   const incompleteTasks = useMemo(
     () => tasks.filter((task) => !task.completed),
@@ -108,6 +153,145 @@ export default function TaskList({
     return easy || incompleteTasks[0] || null;
   }, [incompleteTasks]);
 
+  const liveAttentionPercent = useMemo(() => {
+    if (!intelLive.sampleCount) {
+      return 0;
+    }
+
+    return Math.round((intelLive.attentiveSampleCount / intelLive.sampleCount) * 100);
+  }, [intelLive.attentiveSampleCount, intelLive.sampleCount]);
+
+  const liveDistractionEvents = useMemo(() => {
+    return intelLive.tabAwayEvents + intelLive.windowBlurEvents + intelLive.idleEvents;
+  }, [intelLive.idleEvents, intelLive.tabAwayEvents, intelLive.windowBlurEvents]);
+
+  function resetIntelligenceState() {
+    trackingRef.current = {
+      ...trackingRef.current,
+      attentionState: "not-started",
+      idleActive: false,
+      lastInteractionAt: Date.now(),
+      sampleCount: 0,
+      attentiveSampleCount: 0,
+      tabAwayEvents: 0,
+      windowBlurEvents: 0,
+      idleEvents: 0,
+      interactionEvents: 0,
+      cameraPermission: "idle",
+      cameraUsed: false,
+    };
+
+    setIntelLive((previous) => ({
+      ...previous,
+      cameraPermission: "idle",
+      cameraUsed: false,
+      sampleCount: 0,
+      attentiveSampleCount: 0,
+      tabAwayEvents: 0,
+      windowBlurEvents: 0,
+      idleEvents: 0,
+      interactionEvents: 0,
+      attentionState: "not-started",
+    }));
+  }
+
+  function stopIntelligenceMonitoring() {
+    const tracker = trackingRef.current;
+
+    if (tracker.sampleIntervalId) {
+      clearInterval(tracker.sampleIntervalId);
+      tracker.sampleIntervalId = null;
+    }
+
+    if (tracker.idleIntervalId) {
+      clearInterval(tracker.idleIntervalId);
+      tracker.idleIntervalId = null;
+    }
+
+    if (tracker.listenersAttached && typeof window !== "undefined") {
+      const interactionHandler = tracker.interactionHandler;
+      const blurHandler = tracker.blurHandler;
+      const visibilityHandler = tracker.visibilityHandler;
+      const focusHandler = tracker.focusHandler;
+
+      if (interactionHandler) {
+        window.removeEventListener("pointerdown", interactionHandler, true);
+        window.removeEventListener("keydown", interactionHandler, true);
+        window.removeEventListener("scroll", interactionHandler, true);
+      }
+      if (blurHandler) {
+        window.removeEventListener("blur", blurHandler);
+      }
+      if (focusHandler) {
+        window.removeEventListener("focus", focusHandler);
+      }
+      if (visibilityHandler) {
+        document.removeEventListener("visibilitychange", visibilityHandler);
+      }
+
+      tracker.listenersAttached = false;
+    }
+
+    if (tracker.stream) {
+      tracker.stream.getTracks().forEach((track) => track.stop());
+      tracker.stream = null;
+    }
+
+    if (tracker.video) {
+      tracker.video.srcObject = null;
+      tracker.video = null;
+    }
+  }
+
+  function syncLiveIntelligenceState() {
+    const tracker = trackingRef.current;
+    setIntelLive({
+      cameraPermission: tracker.cameraPermission,
+      cameraSupported: tracker.cameraSupported,
+      cameraUsed: tracker.cameraUsed,
+      sampleCount: tracker.sampleCount,
+      attentiveSampleCount: tracker.attentiveSampleCount,
+      tabAwayEvents: tracker.tabAwayEvents,
+      windowBlurEvents: tracker.windowBlurEvents,
+      idleEvents: tracker.idleEvents,
+      interactionEvents: tracker.interactionEvents,
+      attentionState: tracker.attentionState,
+    });
+  }
+
+  const buildIntelligenceReport = useCallback(() => {
+    const tracker = trackingRef.current;
+    const sampleCount = Math.max(0, tracker.sampleCount);
+    const attentiveSampleCount = Math.max(0, tracker.attentiveSampleCount);
+    const attentionPercent = sampleCount
+      ? (attentiveSampleCount / sampleCount) * 100
+      : 0;
+
+    const distractions =
+      Math.max(0, tracker.tabAwayEvents) +
+      Math.max(0, tracker.windowBlurEvents) +
+      Math.max(0, tracker.idleEvents);
+    const interactionBoost = Math.min(8, Math.round(tracker.interactionEvents / 6));
+    const rawScore = Math.round(attentionPercent - distractions * 7 + interactionBoost);
+    const qualityScore = clamp(rawScore, 0, 100);
+
+    return {
+      enabled: focusIntelEnabled,
+      sampleCount,
+      attentiveSampleCount,
+      attentionPercent: Math.round(attentionPercent),
+      tabAwayEvents: Math.max(0, tracker.tabAwayEvents),
+      windowBlurEvents: Math.max(0, tracker.windowBlurEvents),
+      idleEvents: Math.max(0, tracker.idleEvents),
+      interactionEvents: Math.max(0, tracker.interactionEvents),
+      qualityScore,
+      qualityLabel: getQualityLabel(qualityScore),
+      cameraUsed: Boolean(tracker.cameraUsed),
+      cameraAvailable: Boolean(tracker.cameraSupported),
+      method: tracker.cameraSupported ? "face-detector+behavior-signals" : "behavior-signals",
+    };
+  }, [focusIntelEnabled]);
+
   useEffect(() => {
     if (!focusRunning || !focusTaskId) {
       return;
@@ -117,8 +301,10 @@ export default function TaskList({
       setSecondsRemaining((previous) => {
         if (previous <= 1) {
           const completedMinutes = Math.max(1, Math.round(focusDuration));
-          onLogFocusSession(focusTaskId, completedMinutes);
+          const intelligenceReport = focusIntelEnabled ? buildIntelligenceReport() : null;
+          onLogFocusSession(focusTaskId, completedMinutes, intelligenceReport);
           setFocusRunning(false);
+          stopIntelligenceMonitoring();
           setFocusTaskId(null);
           return focusDuration * 60;
         }
@@ -128,7 +314,158 @@ export default function TaskList({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [focusDuration, focusRunning, focusTaskId, onLogFocusSession]);
+  }, [
+    buildIntelligenceReport,
+    focusDuration,
+    focusIntelEnabled,
+    focusRunning,
+    focusTaskId,
+    onLogFocusSession,
+  ]);
+
+  useEffect(() => {
+    if (!focusTaskId || !focusRunning || !focusIntelEnabled) {
+      stopIntelligenceMonitoring();
+      return;
+    }
+
+    const tracker = trackingRef.current;
+    tracker.cameraSupported = typeof window !== "undefined" && "FaceDetector" in window;
+    tracker.cameraPermission = "requesting";
+    tracker.cameraUsed = false;
+    syncLiveIntelligenceState();
+
+    const interactionHandler = () => {
+      tracker.lastInteractionAt = Date.now();
+      tracker.interactionEvents += 1;
+    };
+
+    const blurHandler = () => {
+      tracker.windowBlurEvents += 1;
+      tracker.attentionState = "window-blur";
+    };
+
+    const focusHandler = () => {
+      tracker.lastInteractionAt = Date.now();
+      tracker.attentionState = "focused-window";
+    };
+
+    const visibilityHandler = () => {
+      if (document.hidden) {
+        tracker.tabAwayEvents += 1;
+        tracker.attentionState = "tab-away";
+      } else {
+        tracker.attentionState = "focused-tab";
+        tracker.lastInteractionAt = Date.now();
+      }
+    };
+
+    tracker.interactionHandler = interactionHandler;
+    tracker.blurHandler = blurHandler;
+    tracker.focusHandler = focusHandler;
+    tracker.visibilityHandler = visibilityHandler;
+
+    window.addEventListener("pointerdown", interactionHandler, true);
+    window.addEventListener("keydown", interactionHandler, true);
+    window.addEventListener("scroll", interactionHandler, true);
+    window.addEventListener("blur", blurHandler);
+    window.addEventListener("focus", focusHandler);
+    document.addEventListener("visibilitychange", visibilityHandler);
+    tracker.listenersAttached = true;
+
+    tracker.idleIntervalId = window.setInterval(() => {
+      const idleForMs = Date.now() - tracker.lastInteractionAt;
+      if (idleForMs >= 45_000) {
+        if (!tracker.idleActive) {
+          tracker.idleEvents += 1;
+          tracker.idleActive = true;
+        }
+        tracker.attentionState = "idle";
+      } else {
+        tracker.idleActive = false;
+      }
+      syncLiveIntelligenceState();
+    }, 3000);
+
+    const detectFaces = async () => {
+      if (document.hidden || !tracker.video || tracker.video.readyState < 2) {
+        tracker.sampleCount += 1;
+        tracker.attentionState = document.hidden ? "tab-away" : tracker.attentionState;
+        syncLiveIntelligenceState();
+        return;
+      }
+
+      try {
+        if (!tracker.detector && "FaceDetector" in window) {
+          tracker.detector = new window.FaceDetector({
+            fastMode: true,
+            maxDetectedFaces: 1,
+          });
+        }
+
+        if (tracker.detector) {
+          const faces = await tracker.detector.detect(tracker.video);
+          tracker.sampleCount += 1;
+          if (faces.length > 0) {
+            tracker.attentiveSampleCount += 1;
+            tracker.attentionState = "face-detected";
+          } else {
+            tracker.attentionState = "face-missing";
+          }
+        }
+      } catch {
+        tracker.attentionState = "camera-error";
+      }
+
+      syncLiveIntelligenceState();
+    };
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: 640, height: 360 },
+          audio: false,
+        });
+
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        const video = document.createElement("video");
+        video.playsInline = true;
+        video.muted = true;
+        video.srcObject = stream;
+        await video.play();
+
+        tracker.stream = stream;
+        tracker.video = video;
+        tracker.cameraPermission = "granted";
+        tracker.cameraUsed = true;
+        syncLiveIntelligenceState();
+
+        tracker.sampleIntervalId = window.setInterval(() => {
+          detectFaces();
+        }, 2000);
+      } catch {
+        tracker.cameraPermission = "denied";
+        tracker.cameraUsed = false;
+        syncLiveIntelligenceState();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      stopIntelligenceMonitoring();
+    };
+  }, [focusIntelEnabled, focusRunning, focusTaskId]);
+
+  useEffect(() => {
+    return () => {
+      stopIntelligenceMonitoring();
+    };
+  }, []);
 
   function resetForm() {
     setDraft("");
@@ -167,6 +504,7 @@ export default function TaskList({
   }
 
   function startFocus(taskId) {
+    resetIntelligenceState();
     setFocusTaskId(taskId);
     setFocusRunning(false);
     setSecondsRemaining(focusDuration * 60);
@@ -183,13 +521,15 @@ export default function TaskList({
       Math.round((elapsed > 0 ? elapsed : focusDuration * 60) / 60)
     );
 
-    onLogFocusSession(focusTaskId, completedMinutes);
+    const intelligenceReport = focusIntelEnabled ? buildIntelligenceReport() : null;
+    onLogFocusSession(focusTaskId, completedMinutes, intelligenceReport);
 
     if (markTaskComplete && focusTask && !focusTask.completed) {
       onToggleTask(focusTask.id);
     }
 
     setFocusRunning(false);
+    stopIntelligenceMonitoring();
     setFocusTaskId(null);
     setSecondsRemaining(focusDuration * 60);
   }
@@ -328,6 +668,55 @@ export default function TaskList({
           <p className="text-xs uppercase tracking-wide text-sky-700">Focus Mode</p>
           <p className="mt-1 text-sm font-semibold text-slate-900">{focusTask.title}</p>
 
+          <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+            <label className="flex items-center justify-between gap-3 text-xs text-slate-700">
+              <span className="font-medium">Focus Intelligence (Beta)</span>
+              <input
+                type="checkbox"
+                checked={focusIntelEnabled}
+                onChange={(event) => {
+                  const nextValue = event.target.checked;
+                  setFocusIntelEnabled(nextValue);
+                  if (!nextValue) {
+                    stopIntelligenceMonitoring();
+                  }
+                }}
+                className="h-4 w-4 rounded border-slate-300 accent-sky-500"
+              />
+            </label>
+
+            {focusIntelEnabled ? (
+              <div className="mt-2 grid gap-2 text-[11px] text-slate-600 sm:grid-cols-2">
+                <p>
+                  Camera:{" "}
+                  <span className="font-medium text-slate-800">
+                    {intelLive.cameraPermission === "granted"
+                      ? "On"
+                      : intelLive.cameraPermission === "denied"
+                        ? "Denied (behavior-only)"
+                        : "Waiting"}
+                  </span>
+                </p>
+                <p>
+                  Attention:{" "}
+                  <span className="font-medium text-slate-800">{liveAttentionPercent}%</span>
+                </p>
+                <p>
+                  Distractions:{" "}
+                  <span className="font-medium text-slate-800">{liveDistractionEvents}</span>
+                </p>
+                <p>
+                  Interaction Events:{" "}
+                  <span className="font-medium text-slate-800">{intelLive.interactionEvents}</span>
+                </p>
+              </div>
+            ) : (
+              <p className="mt-2 text-[11px] text-slate-500">
+                Timer-only mode enabled. No behavior or camera signals will be tracked.
+              </p>
+            )}
+          </div>
+
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {[15, 25, 45, 60].map((minutes) => (
               <button
@@ -394,6 +783,7 @@ export default function TaskList({
               type="button"
               onClick={() => {
                 setFocusRunning(false);
+                stopIntelligenceMonitoring();
                 setFocusTaskId(null);
                 setSecondsRemaining(focusDuration * 60);
               }}

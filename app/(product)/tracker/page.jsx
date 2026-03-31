@@ -19,6 +19,20 @@ function formatDate(date) {
   });
 }
 
+function formatDateTime(date) {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) {
+    return "N/A";
+  }
+
+  return parsed.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function StatCard({ label, value, hint }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -59,6 +73,39 @@ export default function TrackerPage() {
     const focusSessionsCount = focusSessions.filter((session) =>
       scopedActivity.some((day) => day.dateKey === session.dateKey)
     ).length;
+    const scopedFocusSessions = focusSessions.filter((session) =>
+      scopedActivity.some((day) => day.dateKey === session.dateKey)
+    );
+    const intelligenceSessions = scopedFocusSessions.filter(
+      (session) => session?.intelligence?.enabled
+    );
+    const averageQuality =
+      intelligenceSessions.length === 0
+        ? 0
+        : Math.round(
+            intelligenceSessions.reduce(
+              (sum, session) => sum + (Number(session.intelligence.qualityScore) || 0),
+              0
+            ) / intelligenceSessions.length
+          );
+    const averageAttention =
+      intelligenceSessions.length === 0
+        ? 0
+        : Math.round(
+            intelligenceSessions.reduce(
+              (sum, session) => sum + (Number(session.intelligence.attentionPercent) || 0),
+              0
+            ) / intelligenceSessions.length
+          );
+    const distractionEvents = intelligenceSessions.reduce((sum, session) => {
+      const intelligence = session.intelligence || {};
+      return (
+        sum +
+        (Number(intelligence.tabAwayEvents) || 0) +
+        (Number(intelligence.windowBlurEvents) || 0) +
+        (Number(intelligence.idleEvents) || 0)
+      );
+    }, 0);
 
     const windowStartKey = scopedActivity[0]?.dateKey || null;
     const createdTasks = tasks.filter(
@@ -80,12 +127,22 @@ export default function TrackerPage() {
       completedTasks,
       focusMinutes,
       focusSessionsCount,
+      intelligenceSessionsCount: intelligenceSessions.length,
+      averageQuality,
+      averageAttention,
+      distractionEvents,
       completionRate,
       consistency,
       bestDay: bestDay?.dateKey || "N/A",
       weakDay: weakDay?.dateKey || "N/A",
     };
   }, [focusSessions, scopedActivity, tasks]);
+
+  const recentIntelligenceSessions = useMemo(() => {
+    return focusSessions
+      .filter((session) => session?.intelligence?.enabled)
+      .slice(0, 5);
+  }, [focusSessions]);
 
   function handleSaveReflection() {
     setReflectionStatus("saving");
@@ -134,7 +191,7 @@ export default function TrackerPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard
             label="Tasks Completed"
             value={metrics.completedTasks}
@@ -155,6 +212,15 @@ export default function TrackerPage() {
             value={executionScore}
             hint={`${consistencyDelta >= 0 ? "+" : ""}${consistencyDelta}% vs last week`}
           />
+          <StatCard
+            label="Focus Quality"
+            value={`${metrics.averageQuality}%`}
+            hint={
+              metrics.intelligenceSessionsCount > 0
+                ? `${metrics.intelligenceSessionsCount} AI-style sessions`
+                : "No intelligence sessions yet"
+            }
+          />
         </div>
       </section>
 
@@ -168,6 +234,8 @@ export default function TrackerPage() {
             <p>Best day: {metrics.bestDay}</p>
             <p>Weaker day: {metrics.weakDay}</p>
             <p>Total study/work time: {Math.round(metrics.focusMinutes / 60)} hours</p>
+            <p>Average attention: {metrics.averageAttention}%</p>
+            <p>Distraction events: {metrics.distractionEvents}</p>
           </div>
         </section>
 
@@ -201,6 +269,41 @@ export default function TrackerPage() {
           ) : null}
         </section>
       </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
+        <p className="text-xs uppercase tracking-[0.2em] text-sky-600/80">Focus Intelligence</p>
+        <h3 className="mt-2 text-xl font-semibold text-slate-900">Recent Session Signals</h3>
+
+        {recentIntelligenceSessions.length === 0 ? (
+          <p className="mt-3 rounded-xl border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-500">
+            No intelligence sessions yet. Start a focus timer with Focus Intelligence enabled.
+          </p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {recentIntelligenceSessions.map((session) => (
+              <div
+                key={session.id}
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-medium text-slate-900">{session.taskTitle}</p>
+                  <p className="text-xs text-slate-500">{formatDateTime(session.completedAt)}</p>
+                </div>
+                <p className="mt-1 text-xs text-slate-600">
+                  Quality {session.intelligence.qualityScore}% ({session.intelligence.qualityLabel})
+                  {" • "}
+                  Attention {session.intelligence.attentionPercent}%
+                  {" • "}
+                  Distractions{" "}
+                  {session.intelligence.tabAwayEvents +
+                    session.intelligence.windowBlurEvents +
+                    session.intelligence.idleEvents}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_-45px_rgba(15,23,42,0.45)]">
         <p className="text-xs uppercase tracking-[0.2em] text-sky-600/80">Opportunity Tracker</p>

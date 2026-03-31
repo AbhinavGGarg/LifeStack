@@ -133,6 +133,19 @@ function normalizeFocusSession(session) {
       : new Date().toISOString();
 
   const minutes = Number(session?.minutes);
+  const intelligenceRaw =
+    session?.intelligence && typeof session.intelligence === "object"
+      ? session.intelligence
+      : null;
+
+  const sampleCount = Number(intelligenceRaw?.sampleCount);
+  const attentiveSampleCount = Number(intelligenceRaw?.attentiveSampleCount);
+  const attentionPercent = Number(intelligenceRaw?.attentionPercent);
+  const tabAwayEvents = Number(intelligenceRaw?.tabAwayEvents);
+  const windowBlurEvents = Number(intelligenceRaw?.windowBlurEvents);
+  const idleEvents = Number(intelligenceRaw?.idleEvents);
+  const interactionEvents = Number(intelligenceRaw?.interactionEvents);
+  const qualityScore = Number(intelligenceRaw?.qualityScore);
 
   return {
     id: session?.id || crypto.randomUUID(),
@@ -141,6 +154,40 @@ function normalizeFocusSession(session) {
     minutes: Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : 0,
     completedAt,
     dateKey: toDateKey(session?.dateKey || completedAt),
+    intelligence: {
+      enabled: Boolean(intelligenceRaw?.enabled),
+      sampleCount: Number.isFinite(sampleCount) && sampleCount >= 0 ? Math.round(sampleCount) : 0,
+      attentiveSampleCount:
+        Number.isFinite(attentiveSampleCount) && attentiveSampleCount >= 0
+          ? Math.round(attentiveSampleCount)
+          : 0,
+      attentionPercent:
+        Number.isFinite(attentionPercent) && attentionPercent >= 0
+          ? Math.max(0, Math.min(100, Math.round(attentionPercent)))
+          : 0,
+      tabAwayEvents:
+        Number.isFinite(tabAwayEvents) && tabAwayEvents >= 0
+          ? Math.round(tabAwayEvents)
+          : 0,
+      windowBlurEvents:
+        Number.isFinite(windowBlurEvents) && windowBlurEvents >= 0
+          ? Math.round(windowBlurEvents)
+          : 0,
+      idleEvents: Number.isFinite(idleEvents) && idleEvents >= 0 ? Math.round(idleEvents) : 0,
+      interactionEvents:
+        Number.isFinite(interactionEvents) && interactionEvents >= 0
+          ? Math.round(interactionEvents)
+          : 0,
+      qualityScore:
+        Number.isFinite(qualityScore) && qualityScore >= 0
+          ? Math.max(0, Math.min(100, Math.round(qualityScore)))
+          : 0,
+      qualityLabel:
+        String(intelligenceRaw?.qualityLabel || "").trim() || "Not scored",
+      cameraUsed: Boolean(intelligenceRaw?.cameraUsed),
+      cameraAvailable: Boolean(intelligenceRaw?.cameraAvailable),
+      method: String(intelligenceRaw?.method || "none"),
+    },
   };
 }
 
@@ -751,7 +798,7 @@ export function ProductAppProvider({ children }) {
     setTasks((previous) => previous.filter((task) => task.id !== taskId));
   }
 
-  function logFocusSession(taskId, minutes) {
+  function logFocusSession(taskId, minutes, intelligence = null) {
     const normalizedMinutes = Math.max(1, Math.round(Number(minutes) || 0));
 
     if (!normalizedMinutes) {
@@ -765,6 +812,7 @@ export function ProductAppProvider({ children }) {
       taskTitle: linkedTask?.title || "Focus Session",
       minutes: normalizedMinutes,
       completedAt: new Date().toISOString(),
+      intelligence: intelligence || undefined,
     });
 
     setFocusSessions((previous) => [session, ...previous].slice(0, 500));
