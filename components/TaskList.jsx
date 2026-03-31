@@ -134,6 +134,7 @@ export default function TaskList({
     cameraPermission: "idle",
     cameraUsed: false,
   });
+  const previewVideoRef = useRef(null);
 
   const incompleteTasks = useMemo(
     () => tasks.filter((task) => !task.completed),
@@ -170,7 +171,7 @@ export default function TaskList({
       ...trackingRef.current,
       attentionState: "not-started",
       idleActive: false,
-      lastInteractionAt: Date.now(),
+      lastInteractionAt: 0,
       sampleCount: 0,
       attentiveSampleCount: 0,
       tabAwayEvents: 0,
@@ -238,8 +239,11 @@ export default function TaskList({
     }
 
     if (tracker.video) {
+      if (typeof tracker.video.pause === "function") {
+        tracker.video.pause();
+      }
       tracker.video.srcObject = null;
-      tracker.video = null;
+      tracker.video = tracker.video === previewVideoRef.current ? previewVideoRef.current : null;
     }
   }
 
@@ -433,11 +437,11 @@ export default function TaskList({
           return;
         }
 
-        const video = document.createElement("video");
+        const video = previewVideoRef.current || document.createElement("video");
         video.playsInline = true;
         video.muted = true;
         video.srcObject = stream;
-        await video.play();
+        await video.play().catch(() => {});
 
         tracker.stream = stream;
         tracker.video = video;
@@ -663,6 +667,30 @@ export default function TaskList({
         ) : null}
       </form>
 
+      <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <p className="text-xs uppercase tracking-wide text-sky-600/80">Focus Mode</p>
+        <p className="mt-1 text-sm text-slate-700">
+          Lock in with a guided timer, live attention signals, and session tracking.
+        </p>
+
+        {incompleteTasks.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {incompleteTasks.slice(0, 4).map((task) => (
+              <button
+                key={task.id}
+                type="button"
+                onClick={() => startFocus(task.id)}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50"
+              >
+                Start: {task.title}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-slate-500">Add a task first, then start Focus Mode.</p>
+        )}
+      </div>
+
       {focusTask ? (
         <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 p-3">
           <p className="text-xs uppercase tracking-wide text-sky-700">Focus Mode</p>
@@ -686,30 +714,45 @@ export default function TaskList({
             </label>
 
             {focusIntelEnabled ? (
-              <div className="mt-2 grid gap-2 text-[11px] text-slate-600 sm:grid-cols-2">
-                <p>
-                  Camera:{" "}
-                  <span className="font-medium text-slate-800">
-                    {intelLive.cameraPermission === "granted"
-                      ? "On"
-                      : intelLive.cameraPermission === "denied"
-                        ? "Denied (behavior-only)"
-                        : "Waiting"}
-                  </span>
+              <>
+                <div className="mt-2 grid gap-2 text-[11px] text-slate-600 sm:grid-cols-2">
+                  <p>
+                    Camera:{" "}
+                    <span className="font-medium text-slate-800">
+                      {intelLive.cameraPermission === "granted"
+                        ? "On"
+                        : intelLive.cameraPermission === "denied"
+                          ? "Denied (behavior-only)"
+                          : "Waiting"}
+                    </span>
+                  </p>
+                  <p>
+                    Attention:{" "}
+                    <span className="font-medium text-slate-800">{liveAttentionPercent}%</span>
+                  </p>
+                  <p>
+                    Distractions:{" "}
+                    <span className="font-medium text-slate-800">{liveDistractionEvents}</span>
+                  </p>
+                  <p>
+                    Interaction Events:{" "}
+                    <span className="font-medium text-slate-800">{intelLive.interactionEvents}</span>
+                  </p>
+                </div>
+
+                <div className="mt-2 overflow-hidden rounded-lg border border-slate-200 bg-slate-900">
+                  <video
+                    ref={previewVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="h-40 w-full object-cover [transform:scaleX(-1)]"
+                  />
+                </div>
+                <p className="mt-2 text-[11px] text-slate-500">
+                  Live preview only during focus. Video is not stored.
                 </p>
-                <p>
-                  Attention:{" "}
-                  <span className="font-medium text-slate-800">{liveAttentionPercent}%</span>
-                </p>
-                <p>
-                  Distractions:{" "}
-                  <span className="font-medium text-slate-800">{liveDistractionEvents}</span>
-                </p>
-                <p>
-                  Interaction Events:{" "}
-                  <span className="font-medium text-slate-800">{intelLive.interactionEvents}</span>
-                </p>
-              </div>
+              </>
             ) : (
               <p className="mt-2 text-[11px] text-slate-500">
                 Timer-only mode enabled. No behavior or camera signals will be tracked.
