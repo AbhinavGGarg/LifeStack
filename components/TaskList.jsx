@@ -514,6 +514,15 @@ export default function TaskList({
     setSecondsRemaining(focusDuration * 60);
   }
 
+  function openLockInTab(taskId = "") {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const href = taskId ? `/lock-in?task=${encodeURIComponent(taskId)}` : "/lock-in";
+    window.open(href, "_blank", "noopener,noreferrer");
+  }
+
   function completeFocus(markTaskComplete = false) {
     if (!focusTaskId) {
       return;
@@ -673,16 +682,24 @@ export default function TaskList({
           Lock in with a guided timer, live attention signals, and session tracking.
         </p>
 
+        <button
+          type="button"
+          onClick={() => openLockInTab()}
+          className="mt-2 rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+        >
+          Open Full Lock In Mode (New Tab)
+        </button>
+
         {incompleteTasks.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-2">
             {incompleteTasks.slice(0, 4).map((task) => (
               <button
                 key={task.id}
                 type="button"
-                onClick={() => startFocus(task.id)}
+                onClick={() => openLockInTab(task.id)}
                 className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50"
               >
-                Start: {task.title}
+                Lock In: {task.title}
               </button>
             ))}
           </div>

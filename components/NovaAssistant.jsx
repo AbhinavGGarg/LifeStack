@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useProductApp } from "@/components/ProductAppProvider";
 
 function formatTime(date = new Date()) {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -28,10 +30,12 @@ function speakText(text) {
 }
 
 export default function NovaAssistant() {
+  const router = useRouter();
+  const { user, tasks, savedItems, focusMinutesToday, executionScore, addTask } = useProductApp();
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Hey, I’m Nova. Tell me what you need help with and I’ll give you your next best move.",
+      content: `Hey, I’m Nova${user?.profile?.name ? `, ${user.profile.name}` : ""}. Tell me what you need help with and I’ll give your next best move.`,
       time: formatTime(),
     },
   ]);
@@ -40,6 +44,7 @@ export default function NovaAssistant() {
   const [processing, setProcessing] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [speechSupported] = useState(Boolean(getSpeechRecognition()));
+  const [quickActions, setQuickActions] = useState([]);
   const recognitionRef = useRef(null);
 
   const historyForApi = useMemo(() => {
@@ -48,6 +53,18 @@ export default function NovaAssistant() {
       content: item.content,
     }));
   }, [messages]);
+
+  const contextForApi = useMemo(() => {
+    return {
+      topTasks: tasks
+        .filter((task) => !task.completed)
+        .slice(0, 3)
+        .map((task) => task.title),
+      savedOpportunities: savedItems.length,
+      focusMinutesToday,
+      executionScore,
+    };
+  }, [executionScore, focusMinutesToday, savedItems.length, tasks]);
 
   const askNova = useCallback(
     async (content) => {
@@ -60,6 +77,7 @@ export default function NovaAssistant() {
       setMessages((prev) => [...prev, userMessage]);
       setDraft("");
       setProcessing(true);
+      setQuickActions([]);
 
       try {
         const response = await fetch("/api/nova", {
@@ -68,6 +86,7 @@ export default function NovaAssistant() {
           body: JSON.stringify({
             message: trimmed,
             history: [...historyForApi, { role: "user", content: trimmed }],
+            context: contextForApi,
           }),
         });
 
@@ -80,6 +99,7 @@ export default function NovaAssistant() {
           ...prev,
           { role: "assistant", content: reply, time: formatTime() },
         ]);
+        setQuickActions(Array.isArray(payload?.actions) ? payload.actions.slice(0, 4) : []);
 
         if (voiceEnabled) {
           speakText(reply);
@@ -97,7 +117,7 @@ export default function NovaAssistant() {
         setProcessing(false);
       }
     },
-    [historyForApi, processing, voiceEnabled]
+    [contextForApi, historyForApi, processing, voiceEnabled]
   );
 
   function startListening() {
@@ -138,23 +158,52 @@ export default function NovaAssistant() {
     askNova(draft);
   }
 
+  function handleQuickAction(action) {
+    if (!action || typeof action !== "object") {
+      return;
+    }
+
+    if (action.type === "prompt" && action.prompt) {
+      setDraft(String(action.prompt));
+      return;
+    }
+
+    if (action.type === "route" && action.href) {
+      router.push(String(action.href));
+      return;
+    }
+
+    if (action.type === "task" && action.task) {
+      const task = action.task;
+      addTask({
+        title: String(task.title || "Quick task"),
+        priority: String(task.priority || "medium"),
+        estimateMinutes:
+          Number.isFinite(Number(task.estimateMinutes)) && Number(task.estimateMinutes) > 0
+            ? Number(task.estimateMinutes)
+            : null,
+        category: String(task.category || "general"),
+      });
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Added task: ${task.title || "Quick task"}.`,
+          time: formatTime(),
+        },
+      ]);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_18%_14%,rgba(14,165,233,0.2),transparent_34%),radial-gradient(circle_at_82%_8%,rgba(16,185,129,0.14),transparent_28%),#f2f6fb] px-4 py-8 md:px-8 md:py-10">
-      <div className="mx-auto w-full max-w-4xl space-y-4">
+      <div className="mx-auto w-full max-w-5xl space-y-4">
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_35px_95px_-60px_rgba(15,23,42,0.6)]">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-sky-600/80">LifeStack Voice</p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">NOVA</h1>
-              <p className="mt-1 text-sm text-slate-600">Next-step voice coach for students</p>
-            </div>
-            <a
-              href="/dashboard"
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50"
-            >
-              Back to Dashboard
-            </a>
-          </div>
+          <p className="text-xs uppercase tracking-[0.24em] text-sky-600/80">LifeStack Voice</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">NOVA</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Personalized execution coach using your profile, goals, tasks, and real activity.
+          </p>
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_35px_95px_-60px_rgba(15,23,42,0.6)]">
@@ -172,9 +221,7 @@ export default function NovaAssistant() {
               </label>
               <span
                 className={`rounded-full px-2 py-1 text-[11px] font-medium ${
-                  listening
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-slate-100 text-slate-600"
+                  listening ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
                 }`}
               >
                 {listening ? "Listening" : "Idle"}
@@ -209,6 +256,24 @@ export default function NovaAssistant() {
               </div>
             ) : null}
           </div>
+
+          {quickActions.length > 0 ? (
+            <div className="mt-3">
+              <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">Suggested Actions</p>
+              <div className="flex flex-wrap gap-2">
+                {quickActions.map((action, index) => (
+                  <button
+                    key={`${action.label || action.type}-${index}`}
+                    type="button"
+                    onClick={() => handleQuickAction(action)}
+                    className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50"
+                  >
+                    {action.label || "Run action"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <form onSubmit={handleSubmit} className="mt-3 space-y-2">
             <textarea

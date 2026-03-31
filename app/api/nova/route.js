@@ -9,6 +9,7 @@ export async function POST(request) {
     const body = await request.json();
     const message = String(body?.message || "").trim();
     const history = Array.isArray(body?.history) ? body.history : [];
+    const context = body?.context && typeof body.context === "object" ? body.context : {};
 
     if (!message) {
       return NextResponse.json({ error: "Message is required." }, { status: 400 });
@@ -28,9 +29,10 @@ export async function POST(request) {
       message,
       history,
       user,
+      context,
     });
 
-    return NextResponse.json({ reply });
+    return NextResponse.json(reply);
   } catch {
     return NextResponse.json({ error: "Unable to generate assistant response." }, { status: 500 });
   }

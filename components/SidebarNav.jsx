@@ -6,7 +6,7 @@ import { useProductApp } from "@/components/ProductAppProvider";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Focus", href: "/dashboard#focus-mode" },
+  { label: "Lock In", href: "/lock-in", newTab: true },
   { label: "Trajectory", href: "/trajectory" },
   { label: "Opportunities", href: "/opportunities" },
   { label: "Tracker", href: "/tracker" },
@@ -15,7 +15,7 @@ const navItems = [
 ];
 
 function isActive(pathname, href) {
-  if (href === "/dashboard" || href.startsWith("/dashboard#")) {
+  if (href === "/dashboard") {
     return pathname === "/dashboard";
   }
 
