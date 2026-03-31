@@ -9,6 +9,7 @@ const navItems = [
   { label: "Trajectory", href: "/trajectory" },
   { label: "Opportunities", href: "/opportunities" },
   { label: "Tracker", href: "/tracker" },
+  { label: "Aria", href: "/aria", newTab: true },
   { label: "Profile", href: "/profile" },
 ];
 
@@ -40,6 +41,20 @@ export default function SidebarNav() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <nav className="flex flex-wrap gap-2">
           {navItems.map((item) => {
+            if (item.newTab) {
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"
+                >
+                  {item.label}
+                </a>
+              );
+            }
+
             const active = isActive(pathname, item.href);
 
             return (
