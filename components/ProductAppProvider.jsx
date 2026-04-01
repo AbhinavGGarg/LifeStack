@@ -218,6 +218,63 @@ function normalizeReflection(reflection) {
   };
 }
 
+function normalizeGradesSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") {
+    return null;
+  }
+
+  const courses = Array.isArray(snapshot.courses)
+    ? snapshot.courses
+        .map((course, index) => {
+          const name = String(course?.name || "").trim();
+          const period = course?.period ? String(course.period).trim() : null;
+          const teacher = course?.teacher ? String(course.teacher).trim() : null;
+          const letterGrade = course?.letterGrade ? String(course.letterGrade).trim() : null;
+          const percent = Number(course?.percent);
+
+          if (!name) {
+            return null;
+          }
+
+          return {
+            id: course?.id || `${name}-${period || index}`,
+            name,
+            period: period || null,
+            teacher: teacher || null,
+            letterGrade: letterGrade || null,
+            percent: Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : null,
+          };
+        })
+        .filter(Boolean)
+    : [];
+
+  const courseCount = courses.length;
+  const numericCourseCount = courses.filter((course) => Number.isFinite(course.percent)).length;
+  const averagePercent =
+    numericCourseCount > 0
+      ? Math.round(
+          (courses.reduce((sum, course) => sum + (Number(course.percent) || 0), 0) /
+            numericCourseCount) *
+            100
+        ) / 100
+      : null;
+
+  return {
+    source: String(snapshot?.source || "studentvue"),
+    serviceUrl: snapshot?.serviceUrl ? String(snapshot.serviceUrl) : null,
+    syncedAt:
+      snapshot?.syncedAt && !Number.isNaN(new Date(snapshot.syncedAt).getTime())
+        ? snapshot.syncedAt
+        : new Date().toISOString(),
+    courses,
+    summary: {
+      courseCount,
+      numericCourseCount,
+      averagePercent,
+    },
+  };
+}
+
 function buildActivityMap(tasks, focusSessions) {
   const map = {};
 
@@ -321,6 +378,7 @@ export function ProductAppProvider({ children }) {
   const [goalPlans, setGoalPlans] = useState([]);
   const [dailyReflections, setDailyReflections] = useState([]);
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
+  const [gradesSnapshot, setGradesSnapshot] = useState(null);
 
   const studentProfile = useMemo(() => {
     if (!user) {
@@ -601,6 +659,14 @@ export function ProductAppProvider({ children }) {
     const goalsKey = `${prefix}:goalPlans`;
     const reflectionsKey = `${prefix}:reflections`;
     const preferencesKey = `${prefix}:preferences`;
+    const gradesKey = `${prefix}:grades`;
+    let parsedGrades = null;
+
+    try {
+      parsedGrades = JSON.parse(localStorage.getItem(gradesKey) || "null");
+    } catch {
+      parsedGrades = null;
+    }
 
     setTasks(normalizeLocalData(localStorage.getItem(tasksKey)).map(normalizeTask).filter((task) => task.title));
     setSavedItems(normalizeLocalData(localStorage.getItem(savedKey)));
@@ -624,6 +690,7 @@ export function ProductAppProvider({ children }) {
       ...DEFAULT_PREFERENCES,
       ...normalizeLocalObject(localStorage.getItem(preferencesKey)),
     });
+    setGradesSnapshot(normalizeGradesSnapshot(parsedGrades));
   }, [studentProfile]);
 
   useEffect(() => {
@@ -682,6 +749,17 @@ export function ProductAppProvider({ children }) {
       JSON.stringify(preferences)
     );
   }, [preferences, studentProfile]);
+
+  useEffect(() => {
+    if (!studentProfile) {
+      return;
+    }
+
+    localStorage.setItem(
+      `lifestack:${studentProfile.id}:grades`,
+      JSON.stringify(gradesSnapshot || null)
+    );
+  }, [gradesSnapshot, studentProfile]);
 
   useEffect(() => {
     if (!studentProfile || matchedOpportunities.length === 0) {
@@ -995,6 +1073,14 @@ export function ProductAppProvider({ children }) {
     }));
   }
 
+  function saveGradesSnapshot(snapshot) {
+    setGradesSnapshot(normalizeGradesSnapshot(snapshot));
+  }
+
+  function clearGradesSnapshot() {
+    setGradesSnapshot(null);
+  }
+
   async function updateProfile(updates) {
     const response = await fetch("/api/profile", {
       method: "PATCH",
@@ -1047,6 +1133,7 @@ export function ProductAppProvider({ children }) {
     dailyReflections,
     reflectionToday,
     preferences,
+    gradesSnapshot,
     activityTimeline,
     todayPlanTasks,
     topPriorityTask,
@@ -1069,6 +1156,8 @@ export function ProductAppProvider({ children }) {
     updateSavedStatus,
     removeSavedItem,
     updatePreferences,
+    saveGradesSnapshot,
+    clearGradesSnapshot,
     updateProfile,
     logout,
   };

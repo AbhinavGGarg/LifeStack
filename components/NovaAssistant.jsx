@@ -31,7 +31,15 @@ function speakText(text) {
 
 export default function NovaAssistant() {
   const router = useRouter();
-  const { user, tasks, savedItems, focusMinutesToday, executionScore, addTask } = useProductApp();
+  const {
+    user,
+    tasks,
+    savedItems,
+    focusMinutesToday,
+    executionScore,
+    gradesSnapshot,
+    addTask,
+  } = useProductApp();
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -63,8 +71,12 @@ export default function NovaAssistant() {
       savedOpportunities: savedItems.length,
       focusMinutesToday,
       executionScore,
+      gradeCourseCount: gradesSnapshot?.summary?.courseCount || 0,
+      gradeAveragePercent: Number.isFinite(gradesSnapshot?.summary?.averagePercent)
+        ? gradesSnapshot.summary.averagePercent
+        : null,
     };
-  }, [executionScore, focusMinutesToday, savedItems.length, tasks]);
+  }, [executionScore, focusMinutesToday, gradesSnapshot, savedItems.length, tasks]);
 
   const askNova = useCallback(
     async (content) => {

@@ -9,6 +9,7 @@ const navItems = [
   { label: "Lock In", href: "/lock-in" },
   { label: "Trajectory", href: "/trajectory" },
   { label: "Opportunities", href: "/opportunities" },
+  { label: "Grades", href: "/grades" },
   { label: "Tracker", href: "/tracker" },
   { label: "Nova", href: "/nova" },
   { label: "Profile", href: "/profile" },
