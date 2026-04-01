@@ -23,11 +23,13 @@ export async function POST(request) {
     const portalUrl = String(body?.portalUrl || "").trim();
     const username = String(body?.username || "").trim();
     const password = String(body?.password || "").trim();
+    const reportPeriod = String(body?.reportPeriod || "0").trim();
 
     const snapshot = await fetchStudentVueGrades({
       portalUrl,
       username,
       password,
+      reportPeriod,
     });
 
     return NextResponse.json({ snapshot });

@@ -229,6 +229,7 @@ function normalizeGradesSnapshot(snapshot) {
           const name = String(course?.name || "").trim();
           const period = course?.period ? String(course.period).trim() : null;
           const teacher = course?.teacher ? String(course.teacher).trim() : null;
+          const markLabel = course?.markLabel ? String(course.markLabel).trim() : null;
           const letterGrade = course?.letterGrade ? String(course.letterGrade).trim() : null;
           const percent = Number(course?.percent);
 
@@ -241,6 +242,7 @@ function normalizeGradesSnapshot(snapshot) {
             name,
             period: period || null,
             teacher: teacher || null,
+            markLabel: markLabel || null,
             letterGrade: letterGrade || null,
             percent: Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : null,
           };
@@ -262,6 +264,10 @@ function normalizeGradesSnapshot(snapshot) {
   return {
     source: String(snapshot?.source || "studentvue"),
     serviceUrl: snapshot?.serviceUrl ? String(snapshot.serviceUrl) : null,
+    reportPeriod:
+      /^\d+$/.test(String(snapshot?.reportPeriod || "").trim())
+        ? String(snapshot.reportPeriod).trim()
+        : "0",
     syncedAt:
       snapshot?.syncedAt && !Number.isNaN(new Date(snapshot.syncedAt).getTime())
         ? snapshot.syncedAt

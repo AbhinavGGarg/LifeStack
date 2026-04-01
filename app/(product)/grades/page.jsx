@@ -23,6 +23,7 @@ export default function GradesPage() {
   const [portalUrl, setPortalUrl] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [reportPeriod, setReportPeriod] = useState("0");
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
@@ -46,6 +47,9 @@ export default function GradesPage() {
       if (parsed?.username) {
         setUsername(String(parsed.username));
       }
+      if (parsed?.reportPeriod !== undefined && parsed?.reportPeriod !== null) {
+        setReportPeriod(String(parsed.reportPeriod));
+      }
     } catch {
       // no-op
     }
@@ -61,9 +65,10 @@ export default function GradesPage() {
       JSON.stringify({
         portalUrl: portalUrl.trim(),
         username: username.trim(),
+        reportPeriod: reportPeriod.trim() || "0",
       })
     );
-  }, [portalUrl, storageKey, username]);
+  }, [portalUrl, reportPeriod, storageKey, username]);
 
   async function handleSync(event) {
     event.preventDefault();
@@ -79,6 +84,7 @@ export default function GradesPage() {
           portalUrl: portalUrl.trim(),
           username: username.trim(),
           password,
+          reportPeriod: reportPeriod.trim() || "0",
         }),
       });
 
@@ -146,6 +152,17 @@ export default function GradesPage() {
             />
           </label>
 
+          <label className="text-xs text-slate-600">
+            Report Period (optional)
+            <input
+              type="text"
+              value={reportPeriod}
+              onChange={(event) => setReportPeriod(event.target.value)}
+              placeholder="0 (auto/latest)"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-sky-300 focus:outline-none"
+            />
+          </label>
+
           <div className="md:col-span-2 flex flex-wrap items-center gap-2">
             <button
               type="submit"
@@ -164,7 +181,8 @@ export default function GradesPage() {
           </div>
 
           <p className="md:col-span-2 text-xs text-slate-500">
-            Credentials are used only for this sync request and are not stored in LifeStack.
+            Credentials are used only for this sync request and are not stored in LifeStack. If
+            grades look off, try changing Report Period (for many districts, 0 = default/current).
           </p>
         </form>
 
@@ -216,6 +234,7 @@ export default function GradesPage() {
                   <th className="px-3 py-2 font-medium">Course</th>
                   <th className="px-3 py-2 font-medium">Period</th>
                   <th className="px-3 py-2 font-medium">Teacher</th>
+                  <th className="px-3 py-2 font-medium">Mark Source</th>
                   <th className="px-3 py-2 font-medium">Grade</th>
                   <th className="px-3 py-2 font-medium">Percent</th>
                 </tr>
@@ -226,6 +245,7 @@ export default function GradesPage() {
                     <td className="px-3 py-2">{course.name}</td>
                     <td className="px-3 py-2">{course.period || "-"}</td>
                     <td className="px-3 py-2">{course.teacher || "-"}</td>
+                    <td className="px-3 py-2">{course.markLabel || "Current"}</td>
                     <td className="px-3 py-2">{course.letterGrade || "-"}</td>
                     <td className="px-3 py-2">
                       {Number.isFinite(course.percent) ? `${course.percent}%` : "-"}
