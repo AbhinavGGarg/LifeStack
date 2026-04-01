@@ -514,13 +514,13 @@ export default function TaskList({
     setSecondsRemaining(focusDuration * 60);
   }
 
-  function openLockInTab(taskId = "") {
+  function openLockIn(taskId = "") {
     if (typeof window === "undefined") {
       return;
     }
 
     const href = taskId ? `/lock-in?task=${encodeURIComponent(taskId)}` : "/lock-in";
-    window.open(href, "_blank", "noopener,noreferrer");
+    window.location.assign(href);
   }
 
   function completeFocus(markTaskComplete = false) {
@@ -684,10 +684,10 @@ export default function TaskList({
 
         <button
           type="button"
-          onClick={() => openLockInTab()}
+          onClick={() => openLockIn()}
           className="mt-2 rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
         >
-          Open Full Lock In Mode (New Tab)
+          Open Full Lock In Mode
         </button>
 
         {incompleteTasks.length > 0 ? (
@@ -696,7 +696,7 @@ export default function TaskList({
               <button
                 key={task.id}
                 type="button"
-                onClick={() => openLockInTab(task.id)}
+                onClick={() => openLockIn(task.id)}
                 className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50"
               >
                 Lock In: {task.title}

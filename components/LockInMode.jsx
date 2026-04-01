@@ -66,6 +66,7 @@ export default function LockInMode({
     cameraSupported: false,
     cameraPermission: "idle",
     cameraUsed: false,
+    samplingInProgress: false,
   });
 
   const selectedTask = useMemo(
@@ -96,6 +97,32 @@ export default function LockInMode({
   const liveDistractionEvents = useMemo(() => {
     return intelLive.tabAwayEvents + intelLive.windowBlurEvents + intelLive.idleEvents;
   }, [intelLive.idleEvents, intelLive.tabAwayEvents, intelLive.windowBlurEvents]);
+
+  const liveMeasurementMode = useMemo(() => {
+    const hasCameraEvidence =
+      intelLive.cameraPermission === "granted" && intelLive.cameraSupported && intelLive.sampleCount >= 8;
+    return hasCameraEvidence ? "camera+behavior" : "behavior-only";
+  }, [intelLive.cameraPermission, intelLive.cameraSupported, intelLive.sampleCount]);
+
+  const liveConfidence = useMemo(() => {
+    if (
+      intelLive.cameraPermission === "granted" &&
+      intelLive.cameraSupported &&
+      intelLive.sampleCount >= 25
+    ) {
+      return "high";
+    }
+
+    if (
+      intelLive.cameraPermission === "granted" &&
+      intelLive.cameraSupported &&
+      intelLive.sampleCount >= 8
+    ) {
+      return "medium";
+    }
+
+    return "low";
+  }, [intelLive.cameraPermission, intelLive.cameraSupported, intelLive.sampleCount]);
 
   function syncLiveIntelligenceState() {
     const tracker = trackingRef.current;
@@ -156,6 +183,8 @@ export default function LockInMode({
       tracker.video.srcObject = null;
       tracker.video = tracker.video === previewVideoRef.current ? previewVideoRef.current : null;
     }
+
+    tracker.samplingInProgress = false;
   }
 
   const buildIntelligenceReport = useCallback(() => {
@@ -170,9 +199,22 @@ export default function LockInMode({
       Math.max(0, tracker.tabAwayEvents) +
       Math.max(0, tracker.windowBlurEvents) +
       Math.max(0, tracker.idleEvents);
-    const interactionBoost = Math.min(8, Math.round(tracker.interactionEvents / 6));
-    const rawScore = Math.round(attentionPercent - distractions * 7 + interactionBoost);
+    const interactionBoost = Math.min(10, Math.round(tracker.interactionEvents / 5));
+    const behaviorScore = clamp(100 - distractions * 9 + interactionBoost, 0, 100);
+    const hasCameraEvidence = Boolean(tracker.cameraUsed && tracker.cameraSupported && sampleCount >= 8);
+    const rawScore = hasCameraEvidence
+      ? Math.round(attentionPercent * 0.8 + behaviorScore * 0.2)
+      : behaviorScore;
     const qualityScore = clamp(rawScore, 0, 100);
+    const qualityConfidence = hasCameraEvidence
+      ? sampleCount >= 25
+        ? "high"
+        : "medium"
+      : "low";
+    const measurementMode = hasCameraEvidence ? "camera+behavior" : "behavior-only";
+    const evidenceSummary = hasCameraEvidence
+      ? `Measured across ${sampleCount} camera samples.`
+      : "Estimated from tab focus, idle, and interaction signals only.";
 
     return {
       enabled: focusIntelEnabled,
@@ -184,10 +226,16 @@ export default function LockInMode({
       idleEvents: Math.max(0, tracker.idleEvents),
       interactionEvents: Math.max(0, tracker.interactionEvents),
       qualityScore,
-      qualityLabel: getQualityLabel(qualityScore),
+      qualityLabel:
+        qualityConfidence === "low"
+          ? `Estimated ${getQualityLabel(qualityScore)}`
+          : getQualityLabel(qualityScore),
+      qualityConfidence,
+      measurementMode,
+      evidenceSummary,
       cameraUsed: Boolean(tracker.cameraUsed),
       cameraAvailable: Boolean(tracker.cameraSupported),
-      method: tracker.cameraSupported ? "face-detector+behavior-signals" : "behavior-signals",
+      method: hasCameraEvidence ? "face-detector+behavior-signals" : "behavior-signals",
     };
   }, [focusIntelEnabled]);
 
@@ -260,6 +308,7 @@ export default function LockInMode({
     tracker.idleEvents = 0;
     tracker.interactionEvents = 0;
     tracker.lastInteractionAt = Date.now();
+    tracker.samplingInProgress = false;
     syncLiveIntelligenceState();
 
     const interactionHandler = () => {
@@ -312,12 +361,16 @@ export default function LockInMode({
     }, 3000);
 
     const detectFaces = async () => {
+      if (tracker.samplingInProgress) {
+        return;
+      }
+
       if (document.hidden || !tracker.video || tracker.video.readyState < 2) {
-        tracker.sampleCount += 1;
         syncLiveIntelligenceState();
         return;
       }
 
+      tracker.samplingInProgress = true;
       try {
         if (!tracker.detector && "FaceDetector" in window) {
           tracker.detector = new window.FaceDetector({
@@ -338,6 +391,8 @@ export default function LockInMode({
         }
       } catch {
         tracker.attentionState = "camera-error";
+      } finally {
+        tracker.samplingInProgress = false;
       }
 
       syncLiveIntelligenceState();
@@ -486,12 +541,26 @@ export default function LockInMode({
               Attention: <span className="font-medium text-slate-800">{liveAttentionPercent}%</span>
             </p>
             <p>
+              Attention State:{" "}
+              <span className="font-medium capitalize text-slate-800">{intelLive.attentionState}</span>
+            </p>
+            <p>
               Distractions:{" "}
               <span className="font-medium text-slate-800">{liveDistractionEvents}</span>
             </p>
             <p>
               Interactions:{" "}
               <span className="font-medium text-slate-800">{intelLive.interactionEvents}</span>
+            </p>
+            <p>
+              Confidence: <span className="font-medium capitalize text-slate-800">{liveConfidence}</span>
+            </p>
+            <p className="sm:col-span-2">
+              Measurement mode:{" "}
+              <span className="font-medium text-slate-800">{liveMeasurementMode}</span>
+            </p>
+            <p className="sm:col-span-2 text-[11px] text-slate-500">
+              Highest accuracy requires camera permission + staying on this tab with your face in frame.
             </p>
           </div>
 

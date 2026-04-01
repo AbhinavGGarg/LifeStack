@@ -6,11 +6,11 @@ import { useProductApp } from "@/components/ProductAppProvider";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Lock In", href: "/lock-in", newTab: true },
+  { label: "Lock In", href: "/lock-in" },
   { label: "Trajectory", href: "/trajectory" },
   { label: "Opportunities", href: "/opportunities" },
   { label: "Tracker", href: "/tracker" },
-  { label: "Nova", href: "/nova", newTab: true },
+  { label: "Nova", href: "/nova" },
   { label: "Profile", href: "/profile" },
 ];
 
@@ -42,20 +42,6 @@ export default function SidebarNav() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <nav className="flex flex-wrap gap-2">
           {navItems.map((item) => {
-            if (item.newTab) {
-              return (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"
-                >
-                  {item.label}
-                </a>
-              );
-            }
-
             const active = isActive(pathname, item.href);
 
             return (

@@ -299,6 +299,10 @@ export default function TrackerPage() {
                     session.intelligence.windowBlurEvents +
                     session.intelligence.idleEvents}
                 </p>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Confidence {session.intelligence.qualityConfidence || "low"} • Mode{" "}
+                  {session.intelligence.measurementMode || "behavior-only"}
+                </p>
               </div>
             ))}
           </div>

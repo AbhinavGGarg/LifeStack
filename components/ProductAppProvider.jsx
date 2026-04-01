@@ -146,6 +146,14 @@ function normalizeFocusSession(session) {
   const idleEvents = Number(intelligenceRaw?.idleEvents);
   const interactionEvents = Number(intelligenceRaw?.interactionEvents);
   const qualityScore = Number(intelligenceRaw?.qualityScore);
+  const qualityConfidence = String(intelligenceRaw?.qualityConfidence || "low")
+    .trim()
+    .toLowerCase();
+  const measurementMode = String(intelligenceRaw?.measurementMode || "behavior-only")
+    .trim()
+    .toLowerCase();
+  const evidenceSummary = String(intelligenceRaw?.evidenceSummary || "")
+    .trim();
 
   return {
     id: session?.id || crypto.randomUUID(),
@@ -184,6 +192,13 @@ function normalizeFocusSession(session) {
           : 0,
       qualityLabel:
         String(intelligenceRaw?.qualityLabel || "").trim() || "Not scored",
+      qualityConfidence: ["low", "medium", "high"].includes(qualityConfidence)
+        ? qualityConfidence
+        : "low",
+      measurementMode:
+        measurementMode === "camera+behavior" ? "camera+behavior" : "behavior-only",
+      evidenceSummary:
+        evidenceSummary || "Estimated from available focus signals.",
       cameraUsed: Boolean(intelligenceRaw?.cameraUsed),
       cameraAvailable: Boolean(intelligenceRaw?.cameraAvailable),
       method: String(intelligenceRaw?.method || "none"),
